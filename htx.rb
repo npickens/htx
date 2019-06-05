@@ -99,14 +99,14 @@ class HTX
   # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
   # sensitive and often mix cased. These maps are used to restore the correct case of such tags and
   # attributes.
-  TAG_MAP = Hash[*%w[
+  TAG_MAP = %w[
     animateMotion animateTransform clipPath feBlend feColorMatrix feComponentTransfer feComposite
     feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow feFlood feFuncA feFuncB
     feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset fePointLight
     feSpecularLighting feSpotLight feTile feTurbulence foreignObject linearGradient radialGradient textPath
-  ].map { |k| [k.downcase, k] }.flatten].freeze
+  ].map { |tag| [tag.downcase, tag] }.to_h.freeze
 
-  ATTR_MAP = Hash[*%w[
+  ATTR_MAP = %w[
     attributeName baseFrequency calcMode clipPathUnits diffuseConstant edgeMode filterUnits
     gradientTransform gradientUnits kernelMatrix kernelUnitLength keyPoints keySplines keyTimes lengthAdjust
     limitingConeAngle markerHeight markerUnits markerWidth maskContentUnits maskUnits numOctaves pathLength
@@ -114,5 +114,5 @@ class HTX
     preserveAspectRatio primitiveUnits refX refY repeatCount repeatDur requiredExtensions specularConstant
     specularExponent spreadMethod startOffset stdDeviation stitchTiles surfaceScale systemLanguage
     tableValues targetX targetY textLength viewBox xChannelSelector yChannelSelector zoomAndPan
-  ].map { |k| [k.downcase, k] }.flatten].freeze
+  ].map { |attr| [attr.downcase, attr] }.to_h.freeze
 end
