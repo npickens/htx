@@ -56,8 +56,9 @@ class HTX {
     // Remove current node and advance to its next sibling until static key matches or is past that of the
     // node being appended/updated.
     while (currentNode && currentNode[staticKeyProp] < staticKey) {
+      let tmpNode = currentNode
       currentNode = currentNode.nextSibling
-      currentNode.previousSibling.remove()
+      tmpNode.remove()
     }
 
     // If next sibling is an exact match, an item was likely removed from loop-generated content, so remove
