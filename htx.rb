@@ -142,7 +142,11 @@ class HTX
     value.gsub!(/#{LEADING_WHITESPACE}|#{TRAILING_WHITESPACE}|^#{outdent}/, '')
     value.insert(0, '`').insert(-1, '`') if quote
 
-    value
+    # Ensure any Unicode characters get converted to Unicode escape sequences. Also note that since Nokogiri
+    # converts HTML entities to Unicode characters, this causes them to be properly passed to
+    # `document.createTextNode` calls as Unicode escape sequences rather than (incorrectly) as HTML
+    # entities.
+    value.encode('ascii', fallback: ->(c) { "\\u#{c.ord.to_s(16).rjust(4, '0')}" })
   end
 
   # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
