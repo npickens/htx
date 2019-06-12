@@ -20,7 +20,9 @@ Syntax](#template-syntax) section for the full spec):
 
   <ul class='people-list'>
     for (let person of this.people) {
-      <li class='person ${person.role}'>${person.name}</li>
+      <li class='person ${person.role}'>
+        ${person.name}
+      </li>
     }
   </ul>
 </div>
@@ -276,18 +278,15 @@ Result:
 window['/components/people.htx'] = function(node) {
   let htx = node ? node.__htx__ : new HTX()
 
-  htx.node('div', 1, null, 0, 'class', 'people')
-  htx.node('h1', 2, null, 0)
-  htx.node(this.title, 3, null, 3)
-  htx.close()
-  htx.node('ul', 4, null, 0, 'class', 'people-list')
+  htx.node('div', 1, null, 0, 'class', `people`)
+    htx.node('h1', 2, null, 0); htx.node(this.title, 3, null, 3); htx.close()
 
-  for (let person of this.people) {
-    htx.node('li', 5, null, 0, 'class', `person ${person.role}`)
-    htx.node(person.name, 6, null, 3)
-    htx.close()
-  }
-
+    htx.node('ul', 4, null, 0, 'class', `people-list`)
+      for (let person of this.people) {
+        htx.node('li', 5, null, 0, 'class', `person ${person.role}`)
+          htx.node(person.name, 6, null, 3)
+        htx.close()
+      }
   htx.close(2)
 
   return htx.rootNode
@@ -300,7 +299,7 @@ section for details on how it works.
 
 As stated previously, it is important to always use curly braces for control statements, even if they seem
 optional when writing the template. Even though the `for` loop in the uncompiled template only contains one
-line in its body, note that it turns into three lines of code in the compiled function.
+child/tag, note that it turns into three lines of code in the compiled function.
 
 ## JavaScript Library
 

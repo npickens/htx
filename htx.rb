@@ -7,46 +7,64 @@ class HTX
 
   DYNAMIC_KEY_ATTR = 'htx-key'
 
-  RAW_VALUE = /^(`?)\${(.*)}\1$/.freeze
-  TEMPLATE_STRING = /^`.*`$/.freeze
+  LEADING_WHITESPACE = /\A *\n */.freeze
+  TRAILING_WHITESPACE = /\n *\z/.freeze
+  NON_BLANK_NON_FIRST_LINE = /(?<=\n) *(?=\S)/.freeze
+  NEWLINE_NON_BLANK = /\n(?=[^\n]+)/.freeze
+
+  END_STATEMENT_END = /(;|\n|\{|\}) *\z/.freeze
+  BEGIN_STATEMENT_END = /\A *(;|\{|\n|\})/.freeze
+  END_WHITESPACE = /\s\z/.freeze
+  BEGIN_WHITESPACE = /\A\s/.freeze
+
+  RAW_VALUE = /\A\s*\${([\S\s]*)}\s*\z/.freeze
+  TEMPLATE_STRING = /\A\s*`([\S\s]*)`\s*\z/.freeze
+  INTERPOLATION = /\$\\?{([^}]*})?/.freeze
+  HTML_ENTITY = /&([a-zA-Z]+|#\d+|x[0-9a-fA-F]+);/.freeze
+  NON_CONTROL_STATEMENT = /#{INTERPOLATION}|(#{HTML_ENTITY})/.freeze
   CONTROL_STATEMENT = /[{}();]/.freeze
+  CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
 
-  INTERPOLATIONS = /\$\\?{([^}]*})?/.freeze
-  INTERPOLATION = /\${(.*)}/.freeze
-  INTERPOLATION_ESCAPED = /\$\\{/.freeze
-
-  NEWLINE_WHITESPACE = /\s*\n\s*/.freeze
-  MULTIPLE_SPACES = /\s{2,}/.freeze
-
-  EXTRACT_CLOSE_COUNT = /htx\.close\((\d*)\)/.freeze
-
-  def self.compile(name, htx)
-    doc = Nokogiri::HTML::DocumentFragment.parse(htx) { |c| c.noblanks }
-    js = []
+  def self.compile(name, template)
+    doc = Nokogiri::HTML::DocumentFragment.parse(template)
+    js = ''
 
     process(doc, js, static_key: 0)
+    js.rstrip!
 
     <<~EOS
       window['#{name}'] = function(node) {
-      let htx = node ? node.__htx__ : new HTX()
-      #{js.join("\n")}
-      return htx.rootNode
+        let htx = node ? node.__htx__ : new HTX()
+
+        #{js}
+
+        return htx.rootNode
       }
     EOS
   end
 
   def self.process(base, js, options = {})
     base.children.each do |node|
-      text = node.text.strip
+      next if node.comment?
+
       dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr) || 'null'
 
-      if node.comment? || (node.text? && text == '')
-        # Skip.
-      elsif node.text? || node.name == ':'
+      if node.text? || node.name == ':'
+        text = (node.text? ? node : node.children).text
+
         if (value = process_value(text))
-          js << "htx.node(#{value}, #{options[:static_key] += 1}, #{dynamic_key}, #{CHILDLESS | TEXT})"
+          append(js,
+            "#{indent(text[LEADING_WHITESPACE])}"\
+            "htx.node(#{[
+              value,
+              options[:static_key] += 1,
+              dynamic_key,
+              CHILDLESS | TEXT,
+            ].join(', ')})"\
+            "#{indent(text[TRAILING_WHITESPACE])}"
+          )
         else
-          js << text.gsub(NEWLINE_WHITESPACE, "\n")
+          append(js, indent(text))
         end
       else
         attrs = node.attributes.inject([]) do |attrs, (_, attr)|
@@ -56,44 +74,75 @@ class HTX
           attrs << process_value(attr.value, :attr)
         end
 
-        js << "htx.node(#{[
+        append(js, "htx.node(#{[
           "'#{TAG_MAP[node.name] || node.name}'",
           options[:static_key] += 1,
           dynamic_key,
           node.children.empty? ? CHILDLESS : NO_FLAGS,
-          (attrs.join(', ') unless attrs.empty?),
-        ].compact.join(', ')})"
+          attrs,
+        ].flatten.join(', ')})")
 
         unless node.children.empty?
           process(node, js, options)
 
-          if (count = js.last[EXTRACT_CLOSE_COUNT, 1])
-            js[-1] = "htx.close(#{count == '' ? 2 : count.to_i + 1})"
-          else
-            js << 'htx.close()'
+          count = ''
+          js.sub!(CLOSE_STATEMENT) do
+            count = $1 == '' ? 2 : $1.to_i + 1
+            $2
           end
+
+          append(js, "htx.close(#{count})")
         end
       end
     end
   end
 
-  def self.process_value(str, is_attr = false)
-    return nil unless str
-
-    str.gsub!(NEWLINE_WHITESPACE, ' ')
-    str.gsub!(MULTIPLE_SPACES, ' ')
-
-    if (value = str[RAW_VALUE, 2])
-      value
-    elsif str =~ TEMPLATE_STRING
-      str
-    elsif !is_attr && str.gsub(INTERPOLATIONS, '') =~ CONTROL_STATEMENT
-      nil
-    elsif str =~ INTERPOLATION
-      "`#{str}`"
-    else
-      "'#{str.gsub("'", "\\\\'").gsub(INTERPOLATION_ESCAPED, '${')}'"
+  def self.append(js, text)
+    if js == ''
+      # Do nothing.
+    elsif js !~ END_STATEMENT_END && text !~ BEGIN_STATEMENT_END
+      js << '; '
+    elsif js !~ END_WHITESPACE && text !~ BEGIN_WHITESPACE
+      js << ' '
+    elsif js[-1] == "\n"
+      js << '  '
     end
+
+    js << text
+  end
+
+  def self.indent(text)
+    return '' unless text
+
+    text.gsub!(NEWLINE_NON_BLANK, "\n  ")
+    text
+  end
+
+  def self.process_value(text, is_attr = false)
+    return nil if text.nil? || (!is_attr && text.strip == '')
+
+    if (value = text[RAW_VALUE, 1])
+      # Entire text is enclosed in ${...}.
+      value.strip!
+      quote = false
+    elsif (value = text[TEMPLATE_STRING, 1])
+      # Entire text is enclosed in backticks (template string).
+      quote = true
+    elsif is_attr || text.gsub(NON_CONTROL_STATEMENT, '') !~ CONTROL_STATEMENT
+      # Text is an attribute value or doesn't match control statement pattern.
+      value = text.dup
+      quote = true
+    else
+      return nil
+    end
+
+    # Strip one leading and trailing newline (and attached spaces) and perform outdent. Outdent amount
+    # calculation ignores everything before the first newline in its search for the least-indented line.
+    outdent = value.scan(NON_BLANK_NON_FIRST_LINE).min
+    value.gsub!(/#{LEADING_WHITESPACE}|#{TRAILING_WHITESPACE}|^#{outdent}/, '')
+    value.insert(0, '`').insert(-1, '`') if quote
+
+    value
   end
 
   # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
