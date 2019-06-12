@@ -2,8 +2,10 @@
 /* HTX                                                                                                    */
 /**********************************************************************************************************/
 
-const HTX_CHILDLESS = 1
-const HTX_TEXT = 2
+const HTX_CHILDLESS = 0b01
+const HTX_TEXT_NODE = 0b10
+const HTX_FLAG_MASK = 0b11
+const HTX_FLAG_BITS = 2
 
 class HTX {
   /**
@@ -25,17 +27,23 @@ class HTX {
    *
    * @param object A tag name (e.g. 'div'), plain text, Node object, or an object with a `render` function
    *   that returns a Node object.
-   * @param staticKey Index for this specific node within the tree of all potential DOM nodes.
-   * @param dynamicKey Optional key for loop-based content to improve performance of updates.
-   * @param flags Bitwise flags indicating properties of this node:
-   *   HTX_CHILDLESS The node does not have any child nodes.
-   *   HTX_TEXT The first parameter is text to be rendered (as opposed to the name of a tag).
-   * @param ...attrs Optional node attributes in the form key1, value1, key2, value2, ....
+   * @param args First N (optional) are node attributes in the form key1, value1, key2, value2, ....
+   *   Second-to-last (optional) is the node's dynamic key (user-provided key for loop-based content to
+   *   optimize update performance). Last (required) is the node's static key (compiler-generated index for
+   *   this specific node within the tree of all potential DOM nodes) bitwise left shifted and ORed with
+   *   any flags: HTX_CHILDLESS = this node does not have any children; HTX_TEXT_NODE = the first argument
+   *   is text to be rendered (as opposed to the name of a tag).
    */
-  node(object, staticKey, dynamicKey, flags, ...attrs) {
+  node(object, ...args) {
     let node
     let currentNode = this.currentNode
     let parentNode = this.stack[this.stack.length - 1]
+
+    let l = args.length
+    let flags = args[l - 1] & HTX_FLAG_MASK
+    let staticKey = args[l - 1] >> HTX_FLAG_BITS
+    let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
+    let attrsLength = l - (l % 2 == 0 ? 2 : 1)
 
     let staticKeyProp = this.staticKeyProp
     let dynamicKeyProp = this.dynamicKeyProp
@@ -91,7 +99,7 @@ class HTX {
         node = object
       } else if (object && object.render instanceof Function) {
         node = object.render()
-      } else if (!object || flags & HTX_TEXT) {
+      } else if (!object || flags & HTX_TEXT_NODE) {
         node = document.createTextNode((object === null || object === undefined) ? '' : object)
       } else if (object == 'svg' || this.svg) {
         node = document.createElementNS('http://www.w3.org/2000/svg', object)
@@ -105,18 +113,18 @@ class HTX {
     }
 
     // Add/update the node's attributes.
-    for (let k = 0, v = 1; v < attrs.length; k += 2, v += 2) {
-      let isInputValue = node.tagName == 'INPUT' && attrs[k] == 'value'
-      let currentValue = isInputValue ? node.value : node.attributes[attrs[k]]
-      let value = attrs[v]
+    for (let k = 0, v = 1; v < attrsLength; k += 2, v += 2) {
+      let isInputValue = node.tagName == 'INPUT' && args[k] == 'value'
+      let currentValue = isInputValue ? node.value : node.attributes[args[k]]
+      let value = args[v]
 
       if (currentValue !== value) {
         if (isInputValue) {
           node.value = value
         } else {
-          value === false || value === null || value === undefined ? node.removeAttribute(attrs[k]) :
-          value === true ? node.setAttribute(attrs[k], '') :
-          node.setAttribute(attrs[k], value)
+          value === false || value === null || value === undefined ? node.removeAttribute(args[k]) :
+          value === true ? node.setAttribute(args[k], '') :
+          node.setAttribute(args[k], value)
         }
       }
     }
@@ -132,7 +140,7 @@ class HTX {
 
     this.currentNode = node
 
-    if (!(flags & HTX_CHILDLESS)) this.stack.push(node)
+    if (!(flags & (HTX_CHILDLESS | HTX_TEXT_NODE))) this.stack.push(node)
   }
 
   /**

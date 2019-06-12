@@ -278,13 +278,13 @@ Result:
 window['/components/people.htx'] = function(node) {
   let htx = node ? node.__htx__ : new HTX()
 
-  htx.node('div', 1, null, 0, 'class', `people`)
-    htx.node('h1', 2, null, 0); htx.node(this.title, 3, null, 3); htx.close()
+  htx.node('div', 'class', `people`, 4)
+    htx.node('h1', 8); htx.node(this.title, 14); htx.close()
 
-    htx.node('ul', 4, null, 0, 'class', `people-list`)
+    htx.node('ul', 'class', `people-list`, 16)
       for (let person of this.people) {
-        htx.node('li', 5, null, 0, 'class', `person ${person.role}`)
-          htx.node(person.name, 6, null, 3)
+        htx.node('li', 'class', `person ${person.role}`, 20)
+          htx.node(person.name, 26)
         htx.close()
       }
   htx.close(2)

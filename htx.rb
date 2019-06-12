@@ -3,9 +3,9 @@
 require('nokogiri')
 
 class HTX
-  NO_FLAGS = 0
-  CHILDLESS = 1
-  TEXT = 2
+  CHILDLESS = 0b01
+  TEXT_NODE = 0b10
+  FLAG_BITS = 2
 
   DYNAMIC_KEY_ATTR = 'htx-key'
 
@@ -49,7 +49,7 @@ class HTX
     base.children.each do |node|
       next if node.comment?
 
-      dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr) || 'null'
+      dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr)
 
       if node.text? || node.name == ':'
         text = (node.text? ? node : node.children).text
@@ -59,10 +59,9 @@ class HTX
             "#{indent(text[LEADING_WHITESPACE])}"\
             "htx.node(#{[
               value,
-              options[:static_key] += 1,
               dynamic_key,
-              CHILDLESS | TEXT,
-            ].join(', ')})"\
+              ((options[:static_key] += 1) << FLAG_BITS) | TEXT_NODE,
+            ].compact.join(', ')})"\
             "#{indent(text[TRAILING_WHITESPACE])}"
           )
         else
@@ -78,11 +77,10 @@ class HTX
 
         append(js, "htx.node(#{[
           "'#{TAG_MAP[node.name] || node.name}'",
-          options[:static_key] += 1,
-          dynamic_key,
-          node.children.empty? ? CHILDLESS : NO_FLAGS,
           attrs,
-        ].flatten.join(', ')})")
+          dynamic_key,
+          ((options[:static_key] += 1) << FLAG_BITS) | (node.children.empty? ? CHILDLESS : 0),
+        ].compact.flatten.join(', ')})")
 
         unless node.children.empty?
           process(node, js, options)
