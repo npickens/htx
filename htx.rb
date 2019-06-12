@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require('nokogiri')
 
 class HTX
@@ -27,7 +29,7 @@ class HTX
 
   def self.compile(name, template)
     doc = Nokogiri::HTML::DocumentFragment.parse(template)
-    js = ''
+    js = ''.dup
 
     process(doc, js, static_key: 0)
     js.rstrip!
