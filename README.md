@@ -388,13 +388,18 @@ DOM and diff-ing it against the real DOM, HTX walks the actual DOM and updates i
 very performant and has almost no memory overhead.
 
 Performance has been measured with an adaptation of the DBMonster web app. The average of 10 runs each
-running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows   :
+running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows:
 
-| Metric                | HTX   | JSX    |
-|-----------------------|-------|--------|
-| numAnimationFrames    | 216.4 | 177.6  |
-| numFramesSentToScreen | 216.4 | 177.6  |
-| droppedFrameCount     | 290   | 353.5  |
-| loadTime              | 101.6 | 2386.6 |
-| domReadyTime          | 54    | 165.3  |
-| initDomTreeTime       | 45    | 2219.4 |
+| Metric                | JSX   | HTX   | HTX Improvement |
+|-----------------------|-------|-------|-----------------|
+| numAnimationFrames    | 179.4 | 225.5 | 26% faster      |
+| numFramesSentToScreen | 179.4 | 225.5 | 26% faster      |
+| droppedFrameCount     | 349.3 | 279.4 | 20% fewer       |
+| meanFrameTime_raf     | 48.85 | 37.16 | 24% shorter     |
+| framesPerSec_raf      | 20.47 | 26.92 | 32% more        |
+| firstPaint            | 954.3 | 202.7 | 79% faster      |
+| loadTime              | 846.6 | 88.9  | 89% faster      |
+| domReadyTime          | 147.4 | 46.7  | 68% faster      |
+| readyStart            | 3.2   | 1.7   | 47% faster      |
+| requestTime           | 2.3   | 1.8   | 22% faster      |
+| initDomTreeTime       | 696.9 | 40.4  | 94% faster      |
