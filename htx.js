@@ -105,7 +105,10 @@ class HTX {
 
     // Add/update the node's attributes.
     for (let k = 0, v = 1; v < attrsLength; k += 2, v += 2) {
-      if (node.tagName == 'INPUT' && args[k] == 'value') {
+      if (
+        (node.tagName == 'INPUT' || node.tagName == 'SELECT') &&
+        (args[k] == 'value' || args[k] == 'checked')
+      ) {
         node.value = args[v]
       } else if (args[v] === false || args[v] === null || args[v] === undefined) {
         node.removeAttribute(args[k])
