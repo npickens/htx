@@ -42,9 +42,6 @@ class HTX {
     let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
     let attrsLength = l - (l % 2 == 0 ? 2 : 1)
 
-    let staticKeys = this.staticKeys
-    let dynamicKeys = this.dynamicKeys
-
     // Walk, unless we're working on the root node.
     if (staticKey == 1) {
       currentNode = this.rootNode
@@ -60,7 +57,7 @@ class HTX {
 
     // Remove current node and advance to its next sibling until static key matches or is past that of the
     // node being appended/updated.
-    while (currentNode && staticKeys.get(currentNode) < staticKey) {
+    while (currentNode && this.staticKeys.get(currentNode) < staticKey) {
       let tmpNode = currentNode
       currentNode = currentNode.nextSibling
       tmpNode.remove()
@@ -69,17 +66,17 @@ class HTX {
     // If next sibling is an exact match, an item was likely removed from loop-generated content, so remove
     // the current node and move to its next sibling.
     if (
-      staticKeys.get(currentNode) == staticKey &&
-      dynamicKeys.get(currentNode) != dynamicKey &&
-      staticKeys.get(currentNode.nextSibling) == staticKey &&
-      dynamicKeys.get(currentNode.nextSibling) == dynamicKey
+      this.staticKeys.get(currentNode) == staticKey &&
+      this.dynamicKeys.get(currentNode) != dynamicKey &&
+      this.staticKeys.get(currentNode.nextSibling) == staticKey &&
+      this.dynamicKeys.get(currentNode.nextSibling) == dynamicKey
     ) {
       currentNode = currentNode.nextSibling
       currentNode.previousSibling.remove()
     }
 
     // If current node is an exact match, use it.
-    if (staticKeys.get(currentNode) == staticKey && dynamicKeys.get(currentNode) == dynamicKey) {
+    if (this.staticKeys.get(currentNode) == staticKey && this.dynamicKeys.get(currentNode) == dynamicKey) {
       node = currentNode
 
       if (node instanceof Text && node.nodeValue !== object) {
@@ -99,8 +96,8 @@ class HTX {
         node = document.createElement(object)
       }
 
-      staticKeys.set(node, staticKey)
-      dynamicKeys.set(node, dynamicKey)
+      this.staticKeys.set(node, staticKey)
+      this.dynamicKeys.set(node, dynamicKey)
     }
 
     // Add/update the node's attributes.
