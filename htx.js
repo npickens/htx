@@ -105,18 +105,12 @@ class HTX {
 
     // Add/update the node's attributes.
     for (let k = 0, v = 1; v < attrsLength; k += 2, v += 2) {
-      let isInputValue = node.tagName == 'INPUT' && args[k] == 'value'
-      let currentValue = isInputValue ? node.value : node.attributes[args[k]]
-      let value = args[v]
-
-      if (currentValue !== value) {
-        if (isInputValue) {
-          node.value = value
-        } else {
-          value === false || value === null || value === undefined ? node.removeAttribute(args[k]) :
-          value === true ? node.setAttribute(args[k], '') :
-          node.setAttribute(args[k], value)
-        }
+      if (node.tagName == 'INPUT' && args[k] == 'value') {
+        node.value = args[v]
+      } else if (args[v] === false || args[v] === null || args[v] === undefined) {
+        node.removeAttribute(args[k])
+      } else {
+        node.setAttribute(args[k], args[v] === true ? '' : args[v])
       }
     }
 
