@@ -36,7 +36,7 @@ class HTX
 
     <<~EOS
       window['#{name}'] = function(node) {
-        let htx = node ? node.__htx__ : new HTX()
+        let htx = HTX.instances.get(node) || new HTX
 
         #{js}
 

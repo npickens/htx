@@ -276,7 +276,7 @@ Result:
 
 ```javascript
 window['/components/people.htx'] = function(node) {
-  let htx = node ? node.__htx__ : new HTX()
+  let htx = HTX.instances.get(node) || new HTX
 
   htx.node('div', 'class', `people`, 4)
     htx.node('h1', 8); htx.node(this.title, 14); htx.close()

@@ -9,17 +9,14 @@ const HTX_FLAG_BITS = 2
 
 class HTX {
   /**
-   * Creates a new HTX instance. Each new instance increments a universal ID used to generate unique static
-   * and dynamic key property names, ensuring the properties on any child nodes that are also managed by HTX
-   * do not get trampled.
+   * Creates a new HTX instance.
+   *
+   * @constructor
    */
   constructor() {
-    HTX.id = HTX.id || 0
-    HTX.id++
-
     this.stack = []
-    this.staticKeyProp = `__htx${HTX.id}SK__`
-    this.dynamicKeyProp = `__htx${HTX.id}DK__`
+    this.staticKeys = new WeakMap
+    this.dynamicKeys = new WeakMap
   }
 
   /**
@@ -45,8 +42,8 @@ class HTX {
     let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
     let attrsLength = l - (l % 2 == 0 ? 2 : 1)
 
-    let staticKeyProp = this.staticKeyProp
-    let dynamicKeyProp = this.dynamicKeyProp
+    let staticKeys = this.staticKeys
+    let dynamicKeys = this.dynamicKeys
 
     // Walk, unless we're working on the root node.
     if (staticKey == 1) {
@@ -63,7 +60,7 @@ class HTX {
 
     // Remove current node and advance to its next sibling until static key matches or is past that of the
     // node being appended/updated.
-    while (currentNode && currentNode[staticKeyProp] < staticKey) {
+    while (currentNode && staticKeys.get(currentNode) < staticKey) {
       let tmpNode = currentNode
       currentNode = currentNode.nextSibling
       tmpNode.remove()
@@ -72,23 +69,17 @@ class HTX {
     // If next sibling is an exact match, an item was likely removed from loop-generated content, so remove
     // the current node and move to its next sibling.
     if (
-      currentNode &&
-      currentNode[staticKeyProp] == staticKey &&
-      currentNode[dynamicKeyProp] != dynamicKey &&
-      currentNode.nextSibling &&
-      currentNode.nextSibling[staticKeyProp] == staticKey &&
-      currentNode.nextSibling[dynamicKeyProp] == dynamicKey
+      staticKeys.get(currentNode) == staticKey &&
+      dynamicKeys.get(currentNode) != dynamicKey &&
+      staticKeys.get(currentNode.nextSibling) == staticKey &&
+      dynamicKeys.get(currentNode.nextSibling) == dynamicKey
     ) {
       currentNode = currentNode.nextSibling
       currentNode.previousSibling.remove()
     }
 
     // If current node is an exact match, use it.
-    if (
-      currentNode &&
-      currentNode[staticKeyProp] == staticKey &&
-      currentNode[dynamicKeyProp] == dynamicKey
-    ) {
+    if (staticKeys.get(currentNode) == staticKey && dynamicKeys.get(currentNode) == dynamicKey) {
       node = currentNode
 
       if (node instanceof Text && node.nodeValue !== object) {
@@ -108,8 +99,8 @@ class HTX {
         node = document.createElement(object)
       }
 
-      node[staticKeyProp] = staticKey
-      node[dynamicKeyProp] = dynamicKey
+      staticKeys.set(node, staticKey)
+      dynamicKeys.set(node, dynamicKey)
     }
 
     // Add/update the node's attributes.
@@ -130,8 +121,7 @@ class HTX {
     }
 
     if (!parentNode) {
-      this.rootNode = node
-      node.__htx__ = this
+      HTX.instances.set(this.rootNode = node, this)
     } else if (!currentNode || currentNode == parentNode) {
       parentNode.append(node)
     } else if (node != currentNode) {
@@ -173,3 +163,5 @@ class HTX {
     }
   }
 }
+
+HTX.instances = new WeakMap
