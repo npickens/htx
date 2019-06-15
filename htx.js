@@ -42,9 +42,7 @@ class HTX {
     let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
 
     // Walk, unless we're working on the root node.
-    if (staticKey == 1) {
-      currentNode = this.rootNode
-    } else {
+    if (staticKey != 1) {
       // If the current node is also the current parent node, descend into it.
       if (parentNode && currentNode == parentNode) {
         currentNode = parentNode.firstChild
@@ -114,7 +112,7 @@ class HTX {
     }
 
     if (!parentNode) {
-      HTX.instances.set(this.rootNode = node, this)
+      HTX.instances.set(node, this)
     } else if (!currentNode || currentNode == parentNode) {
       parentNode.append(node)
     } else if (node != currentNode) {

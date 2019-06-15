@@ -40,7 +40,7 @@ class HTX
 
         #{js}
 
-        return htx.rootNode
+        return htx.currentNode
       }
     EOS
   end
