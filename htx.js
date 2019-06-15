@@ -40,7 +40,6 @@ class HTX {
     let flags = args[l - 1] & HTX_FLAG_MASK
     let staticKey = args[l - 1] >> HTX_FLAG_BITS
     let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
-    let attrsLength = l - (l % 2 == 0 ? 2 : 1)
 
     // Walk, unless we're working on the root node.
     if (staticKey == 1) {
@@ -101,7 +100,7 @@ class HTX {
     }
 
     // Add/update the node's attributes.
-    for (let k = 0, v = 1; v < attrsLength; k += 2, v += 2) {
+    for (let k = 0, v = 1; v < args.length - 1; k += 2, v += 2) {
       if (
         (node.tagName == 'INPUT' || node.tagName == 'SELECT') &&
         (args[k] == 'value' || args[k] == 'checked')
