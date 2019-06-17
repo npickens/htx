@@ -14,7 +14,7 @@ class HTXComponent {
 
     let initial = !this.el
 
-    this.el = this.htx(this.htxPath, this.el)
+    this.el = this.htx(this.el || this.htxPath)
 
     if (this.didRender) {
       if (this.isMounted) {
@@ -50,9 +50,9 @@ class HTXComponent {
     HTXComponent.mountQueue = []
   }
 
-  htx(path, node) {
-    if (!window[path]) throw `Template not found: ${path}`
+  htx(pathOrNode) {
+    if (pathOrNode instanceof String && !window[pathOrNode]) throw `Template not found: ${pathOrNode}`
 
-    return window[path].call(this, node)
+    return HTX.render(pathOrNode, this)
   }
 }

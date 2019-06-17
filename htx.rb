@@ -35,12 +35,8 @@ class HTX
     js.rstrip!
 
     <<~EOS
-      window['#{name}'] = function(node) {
-        let htx = HTX.instances.get(node) || new HTX
-
+      window['#{name}'] = function(htx) {
         #{js}
-
-        return htx.currentNode
       }
     EOS
   end

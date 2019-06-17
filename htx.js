@@ -9,11 +9,28 @@ const HTX_FLAG_BITS = 2
 
 class HTX {
   /**
+   * Calls a template function to either create a new Node or update an existing one.
+   *
+   * @param object The name of a template function, a reference to a template function, or a Node object
+   *   previously returned by this function that needs updating.
+   * @param context The context (`this` binding) for the template function call (optional).
+   */
+  static render(object, context) {
+    let htx = HTX.instances.get(object) || new HTX(window[object] || object)
+
+    if (context) htx.context = context
+    htx.template.call(htx.context, htx)
+
+    return htx.currentNode
+  }
+
+  /**
    * Creates a new HTX instance.
    *
    * @constructor
    */
-  constructor() {
+  constructor(template) {
+    this.template = template
     this.stack = []
     this.staticKeys = new WeakMap
     this.dynamicKeys = new WeakMap

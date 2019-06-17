@@ -33,12 +33,12 @@ library. The full compiled version of the above template is shown in the [Compil
 in summary it takes the following form:
 
 ```javascript
-window['/components/people.htx'] = function(node) {
+window['/components/people.htx'] = function(htx) {
   // ...
 }
 ```
 
-This function is called to both generate a brand new DOM fragment and update an existing one as needed:
+`HTX.render` leverages this function to both generate a brand new DOM fragment and update an existing one:
 
 ```javascript
 let crew = {
@@ -47,18 +47,15 @@ let crew = {
     {role: 'captain', name: 'Mal'},
     {role: 'first-mate', name: 'Zoe'},
     {role: 'mercenary', name: 'Jayne'},
-  ]},
+  ],
 }
 
-let template = window['/components/people.htx']
-let crewNode = template.call(crew)
-
-// A template function call returns a standard Node object.
+// HTX.render returns a standard Node object.
+let crewNode = HTX.render('/components/people.htx', crew)
 document.body.append(crewNode)
 
-// The DOM can be updated when the `crew` object changes by calling the template
-// function again and passing a reference to the existing DOM node.
-template.call(crew, crewNode)
+HTX.render(crewNode) // Update the DOM when the `crew` object changes.
+HTX.render(crewNode, otherCrew) // Update the DOM with an entirely new context.
 ```
 
 The result:
@@ -275,9 +272,7 @@ HTX.compile(path, content)
 Result:
 
 ```javascript
-window['/components/people.htx'] = function(node) {
-  let htx = HTX.instances.get(node) || new HTX
-
+window['/components/people.htx'] = function(htx) {
   htx.node('div', 'class', `people`, 4)
     htx.node('h1', 8); htx.node(this.title, 14); htx.close()
 
@@ -288,8 +283,6 @@ window['/components/people.htx'] = function(node) {
         htx.close()
       }
   htx.close(2)
-
-  return htx.rootNode
 }
 ```
 
