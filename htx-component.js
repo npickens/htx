@@ -2,57 +2,62 @@
 /* HTX Component                                                                                          */
 /**********************************************************************************************************/
 
-class HTXComponent {
-  constructor(htxPath) {
-    this.htxPath = htxPath
-  }
+let HTXComponent = function() {
+  let isMounting = false
+  let mountQueue = []
 
-  render() {
-    if (!this.isMounted && !HTXComponent.isMounting) {
-      throw('Cannot render unmounted component (hint: call mount() instead of render()')
+  return class {
+    constructor(htxPath) {
+      this.htxPath = htxPath
     }
 
-    let initial = !this.el
-
-    this.el = this.htx(this.el || this.htxPath)
-
-    if (this.didRender) {
-      if (this.isMounted) {
-        this.didRender(initial)
-      } else if (initial) {
-        HTXComponent.mountQueue.push(this)
+    render() {
+      if (!this._isMounted && !isMounting) {
+        throw('Cannot render unmounted component (call mount() instead of render()')
       }
+
+      let initial = !this.el
+
+      this.el = this.htx(this.el || this.htxPath)
+
+      if (this.didRender) {
+        if (this._isMounted) {
+          this.didRender(initial)
+        } else if (initial) {
+          mountQueue.push(this)
+        }
+      }
+
+      return this.el
     }
 
-    return this.el
-  }
+    mount(placementNode, placement = 'append') {
+      isMounting = true
+      mountQueue = []
 
-  mount(placementNode, placement = 'append') {
-    HTXComponent.isMounting = true
-    HTXComponent.mountQueue = []
+      this.render()
 
-    this.render()
+      switch (placement) {
+        case 'prepend': placementNode.prepend(this.el); break
+        case 'append': placementNode.append(this.el); break
+        case 'replace': placementNode.parentNode.replaceChild(this.el, placementNode); break
+        case 'before': placementNode.parentNode.insertBefore(this.el, placementNode); break
+        case 'after': placementNode.parentNode.insertBefore(this.el, placementNode.nextSibling); break
+        default: throw `Unrecognized placement type: ${placement}`
+      }
 
-    switch (placement) {
-      case 'prepend': placementNode.prepend(this.el); break
-      case 'append': placementNode.append(this.el); break
-      case 'replace': placementNode.parentNode.replaceChild(this.el, placementNode); break
-      case 'before': placementNode.parentNode.insertBefore(this.el, placementNode); break
-      case 'after': placementNode.parentNode.insertBefore(this.el, placementNode.nextSibling); break
-      default: throw `Unrecognized placement type: ${placement}`
+      for (let component of mountQueue) {
+        component._isMounted = true
+        component.didRender(true)
+      }
+
+      mountQueue = []
     }
 
-    for (let component of HTXComponent.mountQueue) {
-      component.isMounted = true
-      component.didRender(true)
+    htx(pathOrNode) {
+      if (pathOrNode instanceof String && !window[pathOrNode]) throw `Template not found: ${pathOrNode}`
+
+      return HTX.render(pathOrNode, this)
     }
-
-    HTXComponent.mountQueue = []
   }
-
-  htx(pathOrNode) {
-    if (pathOrNode instanceof String && !window[pathOrNode]) throw `Template not found: ${pathOrNode}`
-
-    return HTX.render(pathOrNode, this)
-  }
-}
+}()
