@@ -31,7 +31,6 @@ class HTX {
    */
   constructor(template) {
     this.template = template
-    this.stack = []
     this.staticKeys = new WeakMap
     this.dynamicKeys = new WeakMap
   }
@@ -51,7 +50,7 @@ class HTX {
   node(object, ...args) {
     let node
     let currentNode = this.currentNode
-    let parentNode = this.stack[this.stack.length - 1]
+    let parentNode = this.parentNode
 
     let l = args.length
     let flags = args[l - 1] & HTX_FLAG_MASK
@@ -138,18 +137,19 @@ class HTX {
 
     this.currentNode = node
 
-    if (!(flags & (HTX_CHILDLESS | HTX_TEXT_NODE))) this.stack.push(node)
+    if (!(flags & (HTX_CHILDLESS | HTX_TEXT_NODE))) this.parentNode = node
   }
 
   /**
-   * Pops the top N nodes off the stack and handles removal of any child nodes that should no longer exist.
-   * `this.currentNode` is updated to be the last node popped off the stack.
+   * Moves parent node pointer up N nodes on the ancestor chain and handles removal of any child nodes that
+   * should no longer exist. `this.currentNode` is updated to be the last parent node traversed.
    *
-   * @param count Number of nodes on the stack to close (default: 1).
+   * @param count Number of nodes to close (default: 1).
    */
   close(count = 1) {
     while (count-- > 0) {
-      let parentNode = this.stack.pop()
+      let parentNode = this.parentNode
+      this.parentNode = parentNode.parentNode
 
       // If the current node is the one being closed, we did not walk into it to render any children, so
       // ensure any children that may exist from the previous render are removed.
