@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby --enable=frozen_string_literal
+
+require('fileutils')
+require('open3')
+
+############################################################################################################
+## Run                                                                                                    ##
+############################################################################################################
+
+def run
+  FileUtils.mkdir_p('dist')
+
+  `terser src/htx.js -c --comments --mangle-props regex=/^_.*/ > dist/htx.min.js`
+  `terser src/htx-component.js -c --comments --mangle-props regex=/^_.*/ > dist/htx-component.min.js`
+
+  File.open('dist/htx-all.min.js', 'w') do |file|
+    file.write("/**\n * HTX and HTXComponent\n * Copyright 2019 Nate Pickens\n *\n * @license MIT\n */\n")
+  end
+
+  `cat src/htx.js src/htx-component.js | terser -c --mangle-props regex=/^_.*/ >> dist/htx-all.min.js`
+end
+
+############################################################################################################
+## Install                                                                                                ##
+############################################################################################################
+
+LIBS = [
+  {name: 'Terser', cmd_check: 'which terser', cmd_install: 'npm install -g terser'},
+  {name: 'NPM', cmd_check: 'which npm', cmd_install: 'brew install npm'},
+  {name: 'Homebrew', cmd_check: 'which brew', cmd_install:
+    'ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"'},
+].freeze
+
+def install
+  needed = LIBS.inject([]) do |needed, lib|
+    (`#{lib[:cmd_check]}` && $? == 0) ? (break needed) : needed.push(lib)
+  end.reverse
+
+  return if needed.empty?
+
+  print("Install #{needed.map { |l| l[:name] }.join(', ')}? (y/n) ")
+  exit(1) if gets.strip.downcase != 'y'
+
+  needed.each do |lib|
+    puts_yellow("\u270e Installing #{lib[:name]}...")
+
+    Open3.popen2e(lib[:cmd_install]) do |stdin, stdout_and_stderr, thread|
+      while (line = stdout_and_stderr.gets)
+        puts("  #{line}")
+      end
+
+      if thread.value.exitstatus == 0
+        puts_green("\u2714 #{lib[:name]} installed successfully!")
+      else
+        puts_red("\u2718 #{name} installation failed :(")
+        exit(thread.value.exitstatus)
+      end
+    end
+  end
+end
+
+def puts_red(str)    puts("\e[1;31m#{str}\e[0m") end
+def puts_yellow(str) puts("\e[1;33m#{str}\e[0m") end
+def puts_green(str)  puts("\e[1;32m#{str}\e[0m") end
+
+############################################################################################################
+
+install
+run
