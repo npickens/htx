@@ -18,9 +18,9 @@ let HTXComponent = function() {
         throw('Cannot render unmounted component (call mount() instead of render()')
       }
 
-      let initial = !this.el
+      let initial = !this.node
 
-      this.el = this.htx(this.el || this.htxPath)
+      this.node = this.htx(this.node || this.htxPath)
 
       if (this.didRender) {
         if (this._isMounted) {
@@ -30,7 +30,7 @@ let HTXComponent = function() {
         }
       }
 
-      return this.el
+      return this.node
     }
 
     mount(placementNode, placement = 'append') {
@@ -40,11 +40,11 @@ let HTXComponent = function() {
       this.render()
 
       switch (placement) {
-        case 'prepend': placementNode.prepend(this.el); break
-        case 'append': placementNode.append(this.el); break
-        case 'replace': placementNode.parentNode.replaceChild(this.el, placementNode); break
-        case 'before': placementNode.parentNode.insertBefore(this.el, placementNode); break
-        case 'after': placementNode.parentNode.insertBefore(this.el, placementNode.nextSibling); break
+        case 'prepend': placementNode.prepend(this.node); break
+        case 'append': placementNode.append(this.node); break
+        case 'replace': placementNode.parentNode.replaceChild(this.node, placementNode); break
+        case 'before': placementNode.parentNode.insertBefore(this.node, placementNode); break
+        case 'after': placementNode.parentNode.insertBefore(this.node, placementNode.nextSibling); break
         default: throw `Unrecognized placement type: ${placement}`
       }
 
