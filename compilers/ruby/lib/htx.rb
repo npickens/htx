@@ -3,6 +3,8 @@
 require('nokogiri')
 
 class HTX
+  VERSION = '0.0.0'
+
   CHILDLESS = 0b01
   TEXT_NODE = 0b10
   FLAG_BITS = 2

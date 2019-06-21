@@ -4,20 +4,81 @@ require('fileutils')
 require('open3')
 
 ############################################################################################################
-## Run                                                                                                    ##
+## Build                                                                                                  ##
 ############################################################################################################
 
-def run
-  FileUtils.mkdir_p('dist')
+BASE_DIR = File.expand_path('../../', __FILE__).freeze
+SRC_DIR = File.join(BASE_DIR, 'src').freeze
+DIST_DIR = File.join(BASE_DIR, 'dist').freeze
+VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
 
-  `terser src/htx.js -c --comments --mangle-props regex=/^_.*/ > dist/htx.min.js`
-  `terser src/htx-component.js -c --comments --mangle-props regex=/^_.*/ > dist/htx-component.min.js`
+FILES = [
+  ['HTX', 'htx.js', 'htx.min.js'].freeze,
+  ['HTXComponent', 'htx-component.js', 'htx-component.min.js'].freeze,
+].freeze
+ALL_FILE = 'htx-all.min.js'
+RUBY_FILE_WITH_VERSION = File.join(BASE_DIR, 'compilers/ruby/lib/htx.rb').freeze
 
-  File.open('dist/htx-all.min.js', 'w') do |file|
-    file.write("/**\n * HTX and HTXComponent\n * Copyright 2019 Nate Pickens\n *\n * @license MIT\n */\n")
+def build
+  if ARGV.size == 1 && %w[--major --minor --patch].include?(ARGV[0])
+    version = bump_version(ARGV[0][2..-1].to_sym)
+  else
+    abort('Please specify --patch, --minor, or --major version bump')
   end
 
-  `cat src/htx.js src/htx-component.js | terser -c --mangle-props regex=/^_.*/ >> dist/htx-all.min.js`
+  FileUtils.mkdir_p(DIST_DIR)
+
+  FILES.each do |name, src_file, dist_file|
+    File.open(File.join(DIST_DIR, dist_file), 'w') do |file|
+      file.write(comment(name, version))
+      file.write(`terser #{File.join(SRC_DIR, src_file)} -c --mangle-props regex=/^_.*/`)
+    end
+  end
+
+  File.open(File.join(DIST_DIR, ALL_FILE), 'w') do |file|
+    src_files = FILES.map { |f| File.join(SRC_DIR, f[1]) }.join(' ')
+    names = FILES.map(&:first).join(', ')
+
+    file.write(comment(names, version))
+    file.write(`cat #{src_files} | terser -c --mangle-props regex=/^_.*/`)
+  end
+
+  ruby = File.read(RUBY_FILE_WITH_VERSION)
+  ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{version}'")
+  File.open(RUBY_FILE_WITH_VERSION, 'w') { |f| f.write(ruby) }
+end
+
+def bump_version(which)
+  major, minor, patch = File.read(VERSION_FILE).strip.split('.').map(&:to_i)
+
+  case which
+  when :major
+    major += 1
+    minor = 0
+    patch = 0
+  when :minor
+    minor += 1
+    patch = 0
+  when :patch
+    patch += 1
+  end
+
+  version = "#{major}.#{minor}.#{patch}"
+  File.open(VERSION_FILE, 'w') { |f| f.write(version + "\n") }
+
+  version
+end
+
+def comment(name, version)
+  <<~eos
+    /**
+     * #{name}
+     * Copyright 2019 Nate Pickens
+     *
+     * @license MIT
+     * @version #{version}
+     */
+  eos
 end
 
 ############################################################################################################
@@ -66,4 +127,4 @@ def puts_green(str)  puts("\e[1;32m#{str}\e[0m") end
 ############################################################################################################
 
 install
-run
+build
