@@ -10,6 +10,8 @@ let HTXComponent = function() {
 
   return class {
     constructor(htxPath) {
+      if (!window[htxPath]) throw `Template not found: ${htxPath}`
+
       this.htxPath = htxPath
     }
 
@@ -20,7 +22,7 @@ let HTXComponent = function() {
 
       let initial = !this.node
 
-      this.node = this.htx(this.node || this.htxPath)
+      this.node = HTX.render(this.node || this.htxPath, this)
 
       if (this.didRender) {
         if (this._isMounted) {
@@ -54,12 +56,6 @@ let HTXComponent = function() {
       }
 
       mountQueue = []
-    }
-
-    htx(pathOrNode) {
-      if (pathOrNode instanceof String && !window[pathOrNode]) throw `Template not found: ${pathOrNode}`
-
-      return HTX.render(pathOrNode, this)
     }
   }
 }()
