@@ -9,12 +9,23 @@ let HTXComponent = function() {
   let mountQueue = []
 
   return class {
+    /**
+     * Creates a new HTXComponent instance.
+     *
+     * @constructor
+     */
     constructor(htxPath) {
       if (!window[htxPath]) throw `Template not found: ${htxPath}`
 
       this.htxPath = htxPath
     }
 
+    /**
+     * Creates the DOM fragment for this component if this is the first call; updates the existing DOM
+     * otherwise. Calls `didRender` afterwards if it is defined.
+     *
+     * @return The root DOM node returned by the HTX template function.
+     */
     render() {
       if (!this._isMounted && !isMounting) {
         throw('Cannot render unmounted component (call mount() instead of render())')
@@ -35,6 +46,14 @@ let HTXComponent = function() {
       return this.node
     }
 
+    /**
+     * Inserts this component's DOM fragment into another (usually the main document). Should only be called
+     * once for initial rendering.
+     *
+     * @param placementNode The node this component is being placed relative to.
+     * @param placement The placement relative to placementNode (default is 'append'; can be 'prepend',
+     *   'append', 'replace', 'before', or 'after').
+     */
     mount(placementNode, placement = 'append') {
       isMounting = true
       mountQueue = []
