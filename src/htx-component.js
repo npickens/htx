@@ -17,7 +17,7 @@ let HTXComponent = function() {
 
     render() {
       if (!this._isMounted && !isMounting) {
-        throw('Cannot render unmounted component (call mount() instead of render()')
+        throw('Cannot render unmounted component (call mount() instead of render())')
       }
 
       let initial = !this.node
