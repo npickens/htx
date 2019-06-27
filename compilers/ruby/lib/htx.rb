@@ -2,6 +2,9 @@
 
 require('nokogiri')
 
+##
+# A Ruby compiler for HTX templates.
+#
 class HTX
   VERSION = '0.0.0'
 
@@ -29,6 +32,10 @@ class HTX
   CONTROL_STATEMENT = /[{}();]/.freeze
   CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
 
+  ##
+  # Compiles an HTX template and assigns it the given name (conventionally the path of the template file is
+  # used, but it can be anything).
+  #
   def self.compile(name, template)
     doc = Nokogiri::HTML::DocumentFragment.parse(template)
     js = ''.dup
@@ -43,6 +50,9 @@ class HTX
     EOS
   end
 
+  ##
+  # Processes a DOM node.
+  #
   def self.process(base, js, options = {})
     base.children.each do |node|
       next if node.comment?
@@ -95,6 +105,10 @@ class HTX
     end
   end
 
+  ##
+  # Appends a string to the compiled template function string with appropriate punctuation and/or
+  # whitespace inserted.
+  #
   def self.append(js, text)
     if js == ''
       # Do nothing.
@@ -109,6 +123,9 @@ class HTX
     js << text
   end
 
+  ##
+  # Indents each line of a string (except the first).
+  #
   def self.indent(text)
     return '' unless text
 
@@ -116,6 +133,10 @@ class HTX
     text
   end
 
+  ##
+  # Processes, formats, and encodes an attribute or text node value. Returns nil if the value is determined
+  # to be a control statement.
+  #
   def self.process_value(text, is_attr = false)
     return nil if text.nil? || (!is_attr && text.strip == '')
 
