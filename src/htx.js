@@ -127,7 +127,7 @@ let HTX = function() {
           (node.tagName == 'INPUT' || node.tagName == 'SELECT') &&
           (args[k] == 'value' || args[k] == 'checked')
         ) {
-          node.value = args[v]
+          node[args[k]] = args[v]
         } else if (args[v] === false || args[v] === null || args[v] === undefined) {
           node.removeAttribute(args[k])
         } else {
