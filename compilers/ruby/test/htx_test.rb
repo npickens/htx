@@ -1,6 +1,3 @@
-require('minitest/autorun')
-require_relative('../lib/htx')
-
 class HTXTest < Minitest::Test
   # NOTE: More granular tests are forthcoming.
 
