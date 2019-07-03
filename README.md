@@ -112,7 +112,7 @@ function.
 </div>
 ```
 
-**IMPORTANT NOTE:** Curly braces should always be used, even for single-line loops, if statements, and
+**IMPORTANT NOTE:** Curly braces should always be used, even for single-line loops, `if` statements, and
 function definitions. Control statements are directly inserted into the compiled JavaScript code, but live
 alongside compiler-generated statements. The latter may not do what they are supposed to if curly braces are
 omitted. See the [Compiler](#compiler) section for more detail.
@@ -314,7 +314,7 @@ This is best shown with an example. Consider the following template:
 ```
 
 The comment next to each node shows the key assigned to it by the compiler (passed to the `htx.node` call
-for that particular node), which is set as a property on the resulting DOM node object. Suppose
+for that particular node), which is associated with the resulting DOM node object via a WeakMap. Suppose
 `this.shuttleCount` is 1 on the first rendering of this template:
 
 ```html
@@ -336,8 +336,8 @@ If the reverse were to happen, where the first render produced node 3 and the se
 removal of node 3 would happen upon closing the parent `<div>`: any trailing children not accounted for are
 removed.
 
-As for text content and attribute values, the existing values in the DOM are compared to the current values
-as the tree is walked and any changes applied to the DOM.
+For text content and attribute values, the existing values in the DOM are updated with the current values as
+the tree is walked.
 
 ## HTX Component
 
