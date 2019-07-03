@@ -76,9 +76,9 @@ let HTX = function() {
       // Remove current node and advance to its next sibling until static key matches or is past that of the
       // node being appended/updated.
       while (currentNode && this._staticKeys.get(currentNode) < staticKey) {
-        let tm_parentNode = currentNode
+        let tmpNode = currentNode
         currentNode = currentNode.nextSibling
-        tm_parentNode.remove()
+        tmpNode.remove()
       }
 
       // If next sibling is an exact match, an item was likely removed from loop-generated content, so
