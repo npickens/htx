@@ -6,6 +6,8 @@ require('nokogiri')
 # A Ruby compiler for HTX templates.
 #
 class HTX
+  class MalformedTemplateError < StandardError; end
+
   VERSION = '0.0.1'
 
   CHILDLESS = 0b01
@@ -40,6 +42,16 @@ class HTX
     doc = Nokogiri::HTML::DocumentFragment.parse(template)
     js = ''.dup
 
+    root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
+
+    if root_nodes.any?(&:text?)
+      raise(MalformedTemplateError.new('Template contains text at its root level'))
+    elsif root_nodes.size == 0
+      raise(MalformedTemplateError.new('Template does not have a root node'))
+    elsif root_nodes.size > 1
+      raise(MalformedTemplateError.new('Template has more than one node at its root level'))
+    end
+
     process(doc, js, static_key: 0)
     js.rstrip!
 
@@ -55,7 +67,7 @@ class HTX
   #
   def self.process(base, js, options = {})
     base.children.each do |node|
-      next if node.comment?
+      next unless node.element? || node.text?
 
       dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr)
 

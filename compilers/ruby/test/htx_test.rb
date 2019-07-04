@@ -2,6 +2,18 @@ class HTXTest < Minitest::Test
   # NOTE: More granular tests are forthcoming.
 
   describe('HTX.compile') do
+    it('raises an error when the template contains text at its root level') do
+      -> { HTX.compile('/template.htx', "<div>Hello</div> world!") }.must_raise(HTX::MalformedTemplateError)
+    end
+
+    it('raises an error when the template does not have a root element node') do
+      -> { HTX.compile('/template.htx', "\n  <!-- Hello -->\n") }.must_raise(HTX::MalformedTemplateError)
+    end
+
+    it('raises an error when the template has more than one root node') do
+      -> { HTX.compile('/template.htx', "<div></div><div></div>") }.must_raise(HTX::MalformedTemplateError)
+    end
+
     it('compiles a template') do
       template_name = '/components/people.htx'
       template_content = <<~EOS
