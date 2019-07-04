@@ -34,7 +34,7 @@ class HTX
 
   ##
   # Compiles an HTX template and assigns it the given name (conventionally the path of the template file is
-  # used, but it can be anything).
+  # used for the name, but it can be anything).
   #
   def self.compile(name, template)
     doc = Nokogiri::HTML::DocumentFragment.parse(template)
@@ -51,7 +51,7 @@ class HTX
   end
 
   ##
-  # Processes a DOM node.
+  # Processes a DOM node and all of its descendents.
   #
   def self.process(base, js, options = {})
     base.children.each do |node|
@@ -106,8 +106,8 @@ class HTX
   end
 
   ##
-  # Appends a string to the compiled template function string with appropriate punctuation and/or
-  # whitespace inserted.
+  # Appends a string to the compiled template function string with appropriate punctuation and/or whitespace
+  # inserted.
   #
   def self.append(js, text)
     if js == ''
