@@ -35,13 +35,26 @@ class HTX
   CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
 
   ##
-  # Compiles an HTX template and assigns it the given name (conventionally the path of the template file is
-  # used for the name, but it can be anything).
+  # Convenience method to create a new instance and immediately call compile on it.
   #
   def self.compile(name, template)
-    doc = Nokogiri::HTML::DocumentFragment.parse(template)
-    js = ''.dup
+    new(name, template).compile
+  end
 
+  ##
+  # Creates a new HTX instance. Conventionally the path of the template file is used for the name, but it
+  # can be anything.
+  #
+  def initialize(name, template)
+    @name = name
+    @template = template
+  end
+
+  ##
+  # Compiles the HTX template.
+  #
+  def compile
+    doc = Nokogiri::HTML::DocumentFragment.parse(@template)
     root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
 
     if root_nodes.any?(&:text?)
@@ -52,20 +65,25 @@ class HTX
       raise(MalformedTemplateError.new('Template has more than one node at its root level'))
     end
 
-    process(doc, js, static_key: 0)
-    js.rstrip!
+    @compiled = ''.dup
+    @static_key = 0
+
+    process(doc)
+    @compiled.rstrip!
 
     <<~EOS
-      window['#{name}'] = function(htx) {
-        #{js}
+      window['#{@name}'] = function(htx) {
+        #{@compiled}
       }
     EOS
   end
 
+  private
+
   ##
-  # Processes a DOM node and all of its descendents.
+  # Processes a DOM node's descendents.
   #
-  def self.process(base, js, options = {})
+  def process(base)
     base.children.each do |node|
       next unless node.element? || node.text?
 
@@ -75,17 +93,17 @@ class HTX
         text = (node.text? ? node : node.children).text
 
         if (value = process_value(text))
-          append(js,
+          append(
             "#{indent(text[LEADING_WHITESPACE])}"\
             "htx.node(#{[
               value,
               dynamic_key,
-              ((options[:static_key] += 1) << FLAG_BITS) | TEXT_NODE,
+              ((@static_key += 1) << FLAG_BITS) | TEXT_NODE,
             ].compact.join(', ')})"\
             "#{indent(text[TRAILING_WHITESPACE])}"
           )
         else
-          append(js, indent(text))
+          append(indent(text))
         end
       else
         attrs = node.attributes.inject([]) do |attrs, (_, attr)|
@@ -95,23 +113,23 @@ class HTX
           attrs << process_value(attr.value, :attr)
         end
 
-        append(js, "htx.node(#{[
+        append("htx.node(#{[
           "'#{TAG_MAP[node.name] || node.name}'",
           attrs,
           dynamic_key,
-          ((options[:static_key] += 1) << FLAG_BITS) | (node.children.empty? ? CHILDLESS : 0),
+          ((@static_key += 1) << FLAG_BITS) | (node.children.empty? ? CHILDLESS : 0),
         ].compact.flatten.join(', ')})")
 
         unless node.children.empty?
-          process(node, js, options)
+          process(node)
 
           count = ''
-          js.sub!(CLOSE_STATEMENT) do
+          @compiled.sub!(CLOSE_STATEMENT) do
             count = $1 == '' ? 2 : $1.to_i + 1
             $2
           end
 
-          append(js, "htx.close(#{count})")
+          append("htx.close(#{count})")
         end
       end
     end
@@ -121,24 +139,24 @@ class HTX
   # Appends a string to the compiled template function string with appropriate punctuation and/or whitespace
   # inserted.
   #
-  def self.append(js, text)
-    if js == ''
+  def append(text)
+    if @compiled == ''
       # Do nothing.
-    elsif js !~ END_STATEMENT_END && text !~ BEGIN_STATEMENT_END
-      js << '; '
-    elsif js !~ END_WHITESPACE && text !~ BEGIN_WHITESPACE
-      js << ' '
-    elsif js[-1] == "\n"
-      js << '  '
+    elsif @compiled !~ END_STATEMENT_END && text !~ BEGIN_STATEMENT_END
+      @compiled << '; '
+    elsif @compiled !~ END_WHITESPACE && text !~ BEGIN_WHITESPACE
+      @compiled << ' '
+    elsif @compiled[-1] == "\n"
+      @compiled << '  '
     end
 
-    js << text
+    @compiled << text
   end
 
   ##
   # Indents each line of a string (except the first).
   #
-  def self.indent(text)
+  def indent(text)
     return '' unless text
 
     text.gsub!(NEWLINE_NON_BLANK, "\n  ")
@@ -149,7 +167,7 @@ class HTX
   # Processes, formats, and encodes an attribute or text node value. Returns nil if the value is determined
   # to be a control statement.
   #
-  def self.process_value(text, is_attr = false)
+  def process_value(text, is_attr = false)
     return nil if text.nil? || (!is_attr && text.strip == '')
 
     if (value = text[RAW_VALUE, 1])
