@@ -357,21 +357,29 @@ class People extends HTXComponent {
 ```
 
 The constructor takes the name of the template function for the component. The class provides `mount` and
-`render` functions to be used for insertion into the DOM and refreshing when changes occur, respectively. An
-optioinal `didRender` function can be implemented by the child component class, which will be called
-whenever a render occurs.
+`render` functions to be used for insertion into the DOM and refreshing when changes occur, respectively.
+(Note: `mount` renders and inserts into the DOM and should be called once for the initial rendering of the
+component; `render` should be called on a mounted component whenever it needs to be refreshed.)
+
+An optional `didRender` function can be implemented by the child component class, which will be called
+whenever a render occurs. It is passed one argument that is `true` on the initial render and `false`
+thereafter.
 
 ```javascript
-let people = new People([
-  {role: 'captain', name: 'Mal'},
-  {role: 'first-mate', name: 'Zoe'},
-  {role: 'mercenary', name: 'Jayne'},
-])
+let crew = {
+  title: 'Serenity Crew',
+  people: [
+    {role: 'captain', name: 'Mal'},
+    {role: 'first-mate', name: 'Zoe'},
+    {role: 'mercenary', name: 'Jayne'},
+  ],
+}
 
-people.mount(document.body, 'prepend')
+let people = new People(crew.people)
+people.mount(document.body, 'prepend') // Initial rendering and insertion into the DOM
 
-people.push({role: 'pilot', name: 'Hoban Washburne'})
-people.render()
+crew.people.push({role: 'pilot', name: 'Hoban Washburne'})
+people.render() // The component's `render` function must be called to refresh the DOM.
 ```
 
 ## Performance
