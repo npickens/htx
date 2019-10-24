@@ -11,12 +11,6 @@ BASE_DIR = File.expand_path('../../', __FILE__).freeze
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze
 VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
-
-FILES = [
-  ['HTX', 'htx.js', 'htx.min.js'].freeze,
-  ['HTXComponent', 'htx-component.js', 'htx-component.min.js'].freeze,
-].freeze
-ALL_FILE = 'htx-all.min.js'
 RUBY_FILE_WITH_VERSION = File.join(BASE_DIR, 'compilers/ruby/lib/htx.rb').freeze
 
 def build
@@ -28,20 +22,32 @@ def build
 
   FileUtils.mkdir_p(DIST_DIR)
 
-  FILES.each do |name, src_file, dist_file|
-    File.open(File.join(DIST_DIR, dist_file), 'w') do |file|
-      file.write(comment(name, version))
-      file.write(`terser #{File.join(SRC_DIR, src_file)} -c --mangle-props regex=/^_.*/`)
-    end
+  all = []
+
+  Dir.glob(File.join(SRC_DIR, '*.js')).sort_by(&:size).each do |src_file|
+    dist_file = src_file.sub(SRC_DIR, DIST_DIR)
+    dist_file_min = dist_file.sub(/\.js$/, '.min.js')
+
+    original = File.read(src_file)
+    minified = `terser #{src_file} -c --mangle-props regex=/^_.*/`
+
+    name = original[/^\/\*\*\n \* ([^\n]+)/m, 1]
+    comment = comment(name, version)
+
+    original.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
+    original.gsub!(/^ *\/\/.*\n/, '')
+
+    File.write(dist_file, original.prepend(comment))
+    File.write(dist_file_min, minified.prepend(comment))
+
+    all << [name, src_file, original]
   end
 
-  File.open(File.join(DIST_DIR, ALL_FILE), 'w') do |file|
-    src_files = FILES.map { |f| File.join(SRC_DIR, f[1]) }.join(' ')
-    names = FILES.map(&:first).join(', ')
-
-    file.write(comment(names, version))
-    file.write(`cat #{src_files} | terser -c --mangle-props regex=/^_.*/`)
-  end
+  File.write(File.join(DIST_DIR, 'htx-all.js'), all.map(&:last).join("\n"))
+  File.write(File.join(DIST_DIR, 'htx-all.min.js'),
+    comment(all.map(&:first).join(', '), version) +
+    `terser #{all.map { |f| f[1] }.join(' ')} -c --mangle-props regex=/^_.*/`
+  )
 
   ruby = File.read(RUBY_FILE_WITH_VERSION)
   ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{version}'")
