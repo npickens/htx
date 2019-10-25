@@ -4,24 +4,39 @@ require('fileutils')
 require('open3')
 
 ############################################################################################################
-## Build                                                                                                  ##
+## Constants                                                                                              ##
 ############################################################################################################
 
 BASE_DIR = File.expand_path('../../', __FILE__).freeze
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze
-VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
+
+GEMSPEC_FILE = File.join(BASE_DIR, 'compilers/ruby/htx.gemspec').freeze
 RUBY_FILE_WITH_VERSION = File.join(BASE_DIR, 'compilers/ruby/lib/htx.rb').freeze
 
-def build
-  if ARGV.size == 1 && %w[--major --minor --patch].include?(ARGV[0])
-    version = bump_version(ARGV[0][2..-1].to_sym)
-  else
-    abort('Please specify --patch, --minor, or --major version bump')
+VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
+
+############################################################################################################
+## Command Line Options                                                                                   ##
+############################################################################################################
+
+abort('Usage: bin/build {major|minor|patch}') unless %w[major minor patch].include?(ARGV.join)
+
+major, minor, patch = File.read(VERSION_FILE).strip.split('.').map(&:to_i)
+
+VERSION =
+  case ARGV.shift.to_sym
+  when :major then "#{major + 1}.0.0"
+  when :minor then "#{major}.#{minor + 1}.0"
+  when :patch then "#{major}.#{minor}.#{patch + 1}"
   end
 
-  FileUtils.mkdir_p(DIST_DIR)
+############################################################################################################
+## Build                                                                                                  ##
+############################################################################################################
 
+def build
+  FileUtils.mkdir_p(DIST_DIR)
   all = []
 
   Dir.glob(File.join(SRC_DIR, '*.js')).sort_by(&:size).each do |src_file|
@@ -29,10 +44,16 @@ def build
     dist_file_min = dist_file.sub(/\.js$/, '.min.js')
 
     original = File.read(src_file)
-    minified = `terser #{src_file} -c --mangle-props regex=/^_.*/`
+    minified, status = command("terser #{src_file} -c --mangle-props regex=/^_.*/", capture_output: true)
+
+    if status != 0
+      puts(minified)
+      puts_red('Build aborted')
+      exit(status)
+    end
 
     name = original[/^\/\*\*\n \* ([^\n]+)/m, 1]
-    comment = comment(name, version)
+    comment = comment(name)
 
     original.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
     original.gsub!(/^ *\/\/.*\n/, '')
@@ -43,48 +64,29 @@ def build
     all << [name, src_file, original]
   end
 
-  File.write(File.join(DIST_DIR, 'htx-all.js'), all.map(&:last).join("\n"))
-  File.write(File.join(DIST_DIR, 'htx-all.min.js'),
-    comment(all.map(&:first).join(', '), version) +
-    `terser #{all.map { |f| f[1] }.join(' ')} -c --mangle-props regex=/^_.*/`
-  )
+  cmd = "terser #{all.map { |f| f[1] }.join(' ')} -c --mangle-props regex=/^_.*/"
+  minified, status = command(cmd, capture_output: true)
 
-  ruby = File.read(RUBY_FILE_WITH_VERSION)
-  ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{version}'")
-  File.open(RUBY_FILE_WITH_VERSION, 'w') { |f| f.write(ruby) }
-
-  puts_green("Version #{version} built successfully!")
-end
-
-def bump_version(which)
-  major, minor, patch = File.read(VERSION_FILE).strip.split('.').map(&:to_i)
-
-  case which
-  when :major
-    major += 1
-    minor = 0
-    patch = 0
-  when :minor
-    minor += 1
-    patch = 0
-  when :patch
-    patch += 1
+  if status != 0
+    puts(minified)
+    puts_red('Build aborted')
+    exit(status)
   end
 
-  version = "#{major}.#{minor}.#{patch}"
-  File.open(VERSION_FILE, 'w') { |f| f.write(version + "\n") }
+  File.write(File.join(DIST_DIR, 'htx-all.js'), all.map(&:last).join("\n"))
+  File.write(File.join(DIST_DIR, 'htx-all.min.js'), comment(all.map(&:first).join(', ')) + minified)
 
-  version
+  puts_green('JavaScript files built')
 end
 
-def comment(name, version)
+def comment(name)
   <<~eos
     /**
      * #{name}
      * Copyright 2019 Nate Pickens
      *
      * @license MIT
-     * @version #{version}
+     * @version #{VERSION}
      */
   eos
 end
@@ -96,20 +98,14 @@ end
 def test
   puts_yellow("Running tests...")
 
-  pwd = Dir.pwd
-  dir = File.expand_path('../../compilers/ruby', __FILE__)
+  current_dir = Dir.pwd
+  ruby_dir = File.expand_path('../../compilers/ruby', __FILE__)
 
-  Open3.popen2e("cd #{dir} && bin/test && cd #{pwd}") do |stdin, stdout_and_stderr, thread|
-    while (line = stdout_and_stderr.gets)
-      puts("  #{line}")
-    end
-
-    if thread.value.exitstatus == 0
-      puts_green("Tests passed")
-    else
-      puts_red("Build aborted")
-      exit(thread.value.exitstatus)
-    end
+  if (status = command("cd #{ruby_dir} && bin/test && cd #{current_dir}")) == 0
+    puts_green("Tests passed")
+  else
+    puts_red("Build aborted")
+    exit(status)
   end
 end
 
@@ -129,25 +125,26 @@ def install
     (`#{lib[:cmd_check]}` && $? == 0) ? (break needed) : needed.push(lib)
   end.reverse
 
-  return if needed.empty?
+  if needed.empty?
+    puts_green('Dependencies are installed')
+    return
+  end
 
   print("Install #{needed.map { |l| l[:name] }.join(', ')}? (y/n) ")
-  exit(1) if gets.strip.downcase != 'y'
+
+  if gets.strip.downcase != 'y'
+    puts_red('Build aborted')
+    exit(1)
+  end
 
   needed.each do |lib|
     puts_yellow("Installing #{lib[:name]}...")
 
-    Open3.popen2e(lib[:cmd_install]) do |stdin, stdout_and_stderr, thread|
-      while (line = stdout_and_stderr.gets)
-        puts("  #{line}")
-      end
-
-      if thread.value.exitstatus == 0
-        puts_green("#{lib[:name]} installed successfully!")
-      else
-        puts_red("#{name} installation failed :(")
-        exit(thread.value.exitstatus)
-      end
+    if (status = command(lib[:cmd_install])) == 0
+      puts_green("#{lib[:name]} installed successfully!")
+    else
+      puts_red("#{name} installation failed :(")
+      exit(status)
     end
   end
 end
@@ -160,8 +157,27 @@ def puts_red(str)    puts("\e[1;31m\u2718 #{str}\e[0m") end
 def puts_yellow(str) puts("\e[1;33m\u270e #{str}\e[0m") end
 def puts_green(str)  puts("\e[1;32m\u2714 #{str}\e[0m") end
 
+def command(command, capture_output: false)
+  output = ''.dup
+
+  Open3.popen2e(command) do |stdin, stdout_and_stderr, thread|
+    while (line = stdout_and_stderr.gets)
+      capture_output ? (output << line) : puts("  #{line}")
+    end
+
+    capture_output ? [output, thread.value.exitstatus] : thread.value.exitstatus
+  end
+end
+
+def bump_version
+  File.open(VERSION_FILE, 'w') { |f| f.write(VERSION + "\n") }
+end
+
 ############################################################################################################
 
 install
 test
+bump_version
 build
+
+puts_green("Version #{VERSION} built successfully!")
