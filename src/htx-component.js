@@ -50,11 +50,14 @@ let HTXComponent = function() {
      * Inserts this component's DOM fragment into another (usually the main document). Should only be called
      * once for initial rendering.
      *
-     * @param placementNode The node this component is being placed relative to.
      * @param placement The placement relative to placementNode (default is 'append'; can be 'prepend',
      *   'append', 'replace', 'before', or 'after').
+     * @param placementNode The node this component is being placed relative to (default is document.body).
      */
-    mount(placementNode, placement = 'append') {
+    mount(...args) {
+      let placement = args.find((a) => typeof a == 'string') || 'append'
+      let placementNode = args.find((a) => typeof a != 'string') || document.body
+
       isMounting = true
       mountQueue = []
 
