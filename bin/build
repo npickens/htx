@@ -35,7 +35,22 @@ VERSION =
 ## Build                                                                                                  ##
 ############################################################################################################
 
-def build
+def build_ruby
+  puts_yellow('Building Ruby gem...')
+
+  ruby = File.read(RUBY_FILE_WITH_VERSION)
+  ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{VERSION}'")
+  File.open(RUBY_FILE_WITH_VERSION, 'w') { |f| f.write(ruby) }
+
+  if (status = command("gem build #{GEMSPEC_FILE}")) == 0
+    puts_green('Ruby gem built')
+  else
+    puts_red('Build aborted')
+    exit(status)
+  end
+end
+
+def build_javascript
   FileUtils.mkdir_p(DIST_DIR)
   all = []
 
@@ -178,6 +193,7 @@ end
 install
 test
 bump_version
-build
+build_ruby
+build_javascript
 
 puts_green("Version #{VERSION} built successfully!")
