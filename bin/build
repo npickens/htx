@@ -59,7 +59,9 @@ def build_javascript
     dist_file_min = dist_file.sub(/\.js$/, '.min.js')
 
     original = File.read(src_file)
-    minified, status = command("terser #{src_file} -c --mangle-props regex=/^_.*/", capture_output: true)
+    minified, status = command(
+      "terser #{src_file} -c --comments /^$/ --mangle-props regex=/^_.*/", capture_output: true
+    )
 
     if status != 0
       puts(minified)
@@ -79,7 +81,7 @@ def build_javascript
     all << [name, src_file, original]
   end
 
-  cmd = "terser #{all.map { |f| f[1] }.join(' ')} -c --mangle-props regex=/^_.*/"
+  cmd = "terser #{all.map { |f| f[1] }.join(' ')} -c --comments /^$/ --mangle-props regex=/^_.*/"
   minified, status = command(cmd, capture_output: true)
 
   if status != 0
