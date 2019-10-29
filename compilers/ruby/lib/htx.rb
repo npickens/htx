@@ -8,7 +8,7 @@ require('nokogiri')
 class HTX
   class MalformedTemplateError < StandardError; end
 
-  VERSION = '0.0.1'
+  VERSION = '0.0.2'
 
   CHILDLESS = 0b01
   TEXT_NODE = 0b10

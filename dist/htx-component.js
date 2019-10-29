@@ -3,7 +3,7 @@
  * Copyright 2019 Nate Pickens
  *
  * @license MIT
- * @version 0.0.1
+ * @version 0.0.2
  */
 let HTXComponent = function() {
   let isMounting = false
@@ -36,7 +36,10 @@ let HTXComponent = function() {
       return this.node
     }
 
-    mount(placementNode, placement = 'append') {
+    mount(...args) {
+      let placement = args.find((a) => typeof a == 'string') || 'append'
+      let placementNode = args.find((a) => typeof a != 'string') || document.body
+
       isMounting = true
       mountQueue = []
 
