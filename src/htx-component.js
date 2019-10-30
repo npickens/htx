@@ -77,6 +77,7 @@ let HTXComponent = function() {
         component.didRender(true)
       }
 
+      isMounting = false
       mountQueue = []
     }
   }
