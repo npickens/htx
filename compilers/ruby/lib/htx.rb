@@ -89,6 +89,10 @@ class HTX
       dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr)
 
       if node.text? || node.name == ':'
+        if (non_text_node = node.children.find { |n| !n.text? })
+          raise(MalformedTemplateError.new('dummy tags may not contain child tags', @name, non_text_node))
+        end
+
         text = (node.text? ? node : node.children).text
 
         if (value = process_value(text))

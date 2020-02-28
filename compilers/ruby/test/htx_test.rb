@@ -14,6 +14,10 @@ class HTXTest < Minitest::Test
       -> { HTX.compile('/template.htx', "<div></div><div></div>") }.must_raise(HTX::MalformedTemplateError)
     end
 
+    it('raises an error if a dummy tag contains a child tag') do
+      -> { HTX.compile('/template.htx', "<:>Hello<b>!</b></:>") }.must_raise(HTX::MalformedTemplateError)
+    end
+
     it('compiles a template') do
       template_name = '/components/people.htx'
       template_content = <<~EOS
