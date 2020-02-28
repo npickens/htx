@@ -31,7 +31,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['/components/people.htx'] = function(htx) {
+        window['#{template_name}'] = function(htx) {
           htx.node('div', 'class', `people`, 4)
             htx.node('h1', 8); htx.node(this.title, 14); htx.close()
 
