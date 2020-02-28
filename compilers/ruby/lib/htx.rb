@@ -6,8 +6,6 @@ require('nokogiri')
 # A Ruby compiler for HTX templates.
 #
 class HTX
-  class MalformedTemplateError < StandardError; end
-
   VERSION = '0.0.2'
 
   CHILDLESS = 0b01
@@ -57,12 +55,13 @@ class HTX
     doc = Nokogiri::HTML::DocumentFragment.parse(@template)
     root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
 
-    if root_nodes.any?(&:text?)
-      raise(MalformedTemplateError.new('Template contains text at its root level'))
+    if (text_node = root_nodes.find(&:text?))
+      raise(MalformedTemplateError.new('text nodes are not allowed at root level', @name, text_node))
     elsif root_nodes.size == 0
-      raise(MalformedTemplateError.new('Template does not have a root node'))
+      raise(MalformedTemplateError.new('a root node is required', @name))
     elsif root_nodes.size > 1
-      raise(MalformedTemplateError.new('Template has more than one node at its root level'))
+      raise(MalformedTemplateError.new("root node already defined on line #{root_nodes[0].line}", @name,
+          root_nodes[1]))
     end
 
     @compiled = ''.dup
@@ -196,6 +195,18 @@ class HTX
     # `document.createTextNode` calls as Unicode escape sequences rather than (incorrectly) as HTML
     # entities.
     value.encode('ascii', fallback: ->(c) { "\\u#{c.ord.to_s(16).rjust(4, '0')}" })
+  end
+
+  class MalformedTemplateError < StandardError
+    def initialize(message, name, node = nil)
+      if node
+        line = node.line
+        line = node.parent.line if line < 1
+        line = nil if line == -1
+      end
+
+      super("Malformed template #{name}#{":#{line}" if line}: #{message}")
+    end
   end
 
   # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
