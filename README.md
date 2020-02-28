@@ -188,11 +188,11 @@ individual parts. Any object that is mixed with string content will be cast to a
 <div>[object Object], nickname "Wash"</div>
 ```
 
-#### Void Tag
+#### Tagless Output
 
-Content can be rendered without an enclosing tag by wrapping it in what is treated by HTX as a "void" tag,
-`<:>...</:>`. This is useful within a control loop or conditional when output is desired with no enclosing
-tag.
+Content can be rendered without an enclosing tag by wrapping it in HTX's dummy tag, `<:>...</:>`. This is
+useful within a control loop or conditional when output is desired with no enclosing tag. (Note: dummy tags
+may not contain any child tags.)
 
 ```html
 <!-- Template -->
