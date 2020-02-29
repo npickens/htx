@@ -1,6 +1,6 @@
 /**
  * HTXComponent
- * Copyright 2019 Nate Pickens
+ * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
  */
