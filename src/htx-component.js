@@ -5,8 +5,21 @@
  * @license MIT
  */
 let HTXComponent = function() {
-  let isMounting = false
-  let mountQueue = []
+  let isMounting
+  let renderRoot
+  let didRenders = []
+
+  /**
+   * Calls each `didRender` callback in the `didRenders` queue.
+   */
+  function runDidRenders() {
+    for (let [component, initial] of didRenders) {
+      component.didRender(initial)
+    }
+
+    renderRoot = null
+    didRenders = []
+  }
 
   return class {
     /**
@@ -28,21 +41,17 @@ let HTXComponent = function() {
      * @return The root DOM node returned by the HTX template function.
      */
     render() {
-      if (!this._isMounted && !isMounting) {
+      let initial = !this.node
+
+      if (initial && !isMounting) {
         throw('Cannot render unmounted component (call mount() instead of render())')
       }
 
-      let initial = !this.node
-
+      renderRoot = renderRoot || this
       this.node = HTX.render(this.node || this.htxPath, this)
 
-      if (this.didRender) {
-        if (this._isMounted) {
-          this.didRender(initial)
-        } else if (initial) {
-          mountQueue.push(this)
-        }
-      }
+      if (this.didRender) didRenders.push([this, initial])
+      if (!isMounting && renderRoot == this) runDidRenders()
 
       return this.node
     }
@@ -57,7 +66,6 @@ let HTXComponent = function() {
      */
     mount(...args) {
       isMounting = true
-      mountQueue = []
 
       let placement = args.find((a) => typeof a == 'string') || 'append'
       let placementNode = args.find((a) => typeof a != 'string') || document.body
@@ -72,13 +80,8 @@ let HTXComponent = function() {
 
       if (!node) throw `Unrecognized placement type: ${placement}`
 
-      for (let component of mountQueue) {
-        component._isMounted = true
-        component.didRender(true)
-      }
-
+      runDidRenders()
       isMounting = false
-      mountQueue = []
     }
   }
 }()
