@@ -56,22 +56,21 @@ let HTXComponent = function() {
      * @param placementNode The node this component is being placed relative to (default is document.body).
      */
     mount(...args) {
-      let placement = args.find((a) => typeof a == 'string') || 'append'
-      let placementNode = args.find((a) => typeof a != 'string') || document.body
-
       isMounting = true
       mountQueue = []
 
-      this.render()
+      let placement = args.find((a) => typeof a == 'string') || 'append'
+      let placementNode = args.find((a) => typeof a != 'string') || document.body
+      let node = this.render()
 
-      switch (placement) {
-        case 'prepend': placementNode.prepend(this.node); break
-        case 'append': placementNode.append(this.node); break
-        case 'replace': placementNode.parentNode.replaceChild(this.node, placementNode); break
-        case 'before': placementNode.parentNode.insertBefore(this.node, placementNode); break
-        case 'after': placementNode.parentNode.insertBefore(this.node, placementNode.nextSibling); break
-        default: throw `Unrecognized placement type: ${placement}`
-      }
+      placement == 'prepend' ? placementNode.prepend(node) :
+      placement == 'append' ? placementNode.append(node) :
+      placement == 'replace' ? placementNode.parentNode.replaceChild(node, placementNode) :
+      placement == 'before' ? placementNode.parentNode.insertBefore(node, placementNode) :
+      placement == 'after' ? placementNode.parentNode.insertBefore(node, placementNode.nextSibling) :
+      node = null
+
+      if (!node) throw `Unrecognized placement type: ${placement}`
 
       for (let component of mountQueue) {
         component._isMounted = true
