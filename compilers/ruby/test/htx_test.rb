@@ -3,19 +3,27 @@ class HTXTest < Minitest::Test
 
   describe('HTX.compile') do
     it('raises an error when the template contains text at its root level') do
-      -> { HTX.compile('/template.htx', "<div>Hello</div> world!") }.must_raise(HTX::MalformedTemplateError)
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<div>Hello</div> world!")
+      end
     end
 
     it('raises an error when the template does not have a root element node') do
-      -> { HTX.compile('/template.htx', "\n  <!-- Hello -->\n") }.must_raise(HTX::MalformedTemplateError)
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "\n  <!-- Hello -->\n")
+      end
     end
 
     it('raises an error when the template has more than one root node') do
-      -> { HTX.compile('/template.htx', "<div></div><div></div>") }.must_raise(HTX::MalformedTemplateError)
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<div></div><div></div>")
+      end
     end
 
     it('raises an error if a dummy tag contains a child tag') do
-      -> { HTX.compile('/template.htx', "<:>Hello<b>!</b></:>") }.must_raise(HTX::MalformedTemplateError)
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<:>Hello<b>!</b></:>")
+      end
     end
 
     it('compiles a template') do
@@ -49,7 +57,7 @@ class HTXTest < Minitest::Test
         }
       EOS
 
-      HTX.compile(template_name, template_content).must_equal(compiled)
+      assert_equal(compiled, HTX.compile(template_name, template_content))
     end
   end
 end
