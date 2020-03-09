@@ -26,6 +26,27 @@ class HTXTest < Minitest::Test
       end
     end
 
+    it('treats tags with only whitespace text as childless') do
+      template_name = '/components/whitespace-childless.htx'
+      template_content = <<~EOS
+        <div>
+          <span>
+
+          </span>
+        </div>
+      EOS
+
+      compiled = <<~EOS
+        window['#{template_name}'] = function(htx) {
+          htx.node('div', 4)
+            htx.node('span', 9)
+          htx.close()
+        }
+      EOS
+
+      assert_equal(compiled, HTX.compile(template_name, template_content))
+    end
+
     it('compiles a template') do
       template_name = '/components/people.htx'
       template_content = <<~EOS

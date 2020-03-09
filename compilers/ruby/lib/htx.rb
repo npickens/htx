@@ -116,14 +116,16 @@ class HTX
           attrs << process_value(attr.value, :attr)
         end
 
+        childless = node.children.empty? || (node.children.size == 1 && node.children[0].text.strip == '')
+
         append("htx.node(#{[
           "'#{TAG_MAP[node.name] || node.name}'",
           attrs,
           dynamic_key,
-          ((@static_key += 1) << FLAG_BITS) | (node.children.empty? ? CHILDLESS : 0),
+          ((@static_key += 1) << FLAG_BITS) | (childless ? CHILDLESS : 0),
         ].compact.flatten.join(', ')})")
 
-        unless node.children.empty?
+        unless childless
           process(node)
 
           count = ''
