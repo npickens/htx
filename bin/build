@@ -42,7 +42,7 @@ def build_ruby
   ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{VERSION}'")
   File.open(RUBY_FILE_WITH_VERSION, 'w') { |f| f.write(ruby) }
 
-  if (status = command("gem build #{GEMSPEC_FILE}")) == 0
+  if (status = command("cd #{File.dirname(GEMSPEC_FILE)} && gem build #{File.basename(GEMSPEC_FILE)}")) == 0
     puts_green('Ruby gem built')
   else
     puts_red('Build aborted')
