@@ -6,7 +6,7 @@ require('nokogiri')
 # A Ruby compiler for HTX templates.
 #
 class HTX
-  VERSION = '0.0.3'
+  VERSION = '0.0.4'
 
   CHILDLESS = 0b01
   TEXT_NODE = 0b10

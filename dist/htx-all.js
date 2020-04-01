@@ -3,7 +3,7 @@
  * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
- * @version 0.0.3
+ * @version 0.0.4
  */
 let HTX = function() {
   const CHILDLESS = 0b01
@@ -15,7 +15,8 @@ let HTX = function() {
 
   return class {
     static render(object, context) {
-      let htx = instances.get(object) || new HTX(window[object] || object)
+      let htx = instances.get(object) || new HTX((HTX.templates || window)[object] || object)
+      if (!htx) throw `Template not found: ${object}`
 
       if (context) htx._context = context
       htx._template.call(htx._context, htx)
@@ -146,7 +147,7 @@ let HTX = function() {
  * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
- * @version 0.0.3
+ * @version 0.0.4
  */
 let HTXComponent = function() {
   let isMounting
@@ -164,8 +165,6 @@ let HTXComponent = function() {
 
   return class {
     constructor(htxPath) {
-      if (!window[htxPath]) throw `Template not found: ${htxPath}`
-
       this.htxPath = htxPath
     }
 

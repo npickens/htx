@@ -3,7 +3,7 @@
  * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
- * @version 0.0.3
+ * @version 0.0.4
  */
 let HTXComponent = function() {
   let isMounting
@@ -21,8 +21,6 @@ let HTXComponent = function() {
 
   return class {
     constructor(htxPath) {
-      if (!window[htxPath]) throw `Template not found: ${htxPath}`
-
       this.htxPath = htxPath
     }
 
