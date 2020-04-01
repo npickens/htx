@@ -29,8 +29,6 @@ let HTXComponent = function() {
      * @param htxPath The path (name) of the compiled HTX template to use for this component.
      */
     constructor(htxPath) {
-      if (!window[htxPath]) throw `Template not found: ${htxPath}`
-
       this.htxPath = htxPath
     }
 

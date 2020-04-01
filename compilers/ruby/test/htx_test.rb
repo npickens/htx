@@ -26,6 +26,19 @@ class HTXTest < Minitest::Test
       end
     end
 
+    it('assigns compiled template function to a custom object when assign_to is specified') do
+      template_name = '/components/for-custom-object.htx'
+      template_content = '<div></div>'
+
+      compiled = <<~EOS
+        customObject['#{template_name}'] = function(htx) {
+          htx.node('div', 5)
+        }
+      EOS
+
+      assert_equal(compiled, HTX.compile(template_name, template_content, assign_to: 'customObject'))
+    end
+
     it('treats tags with only whitespace text as childless') do
       template_name = '/components/whitespace-childless.htx'
       template_content = <<~EOS

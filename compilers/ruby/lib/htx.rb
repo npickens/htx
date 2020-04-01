@@ -32,11 +32,13 @@ class HTX
   CONTROL_STATEMENT = /[{}();]/.freeze
   CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
 
+  EMPTY_HASH = {}.freeze
+
   ##
   # Convenience method to create a new instance and immediately call compile on it.
   #
-  def self.compile(name, template)
-    new(name, template).compile
+  def self.compile(name, template, options = EMPTY_HASH)
+    new(name, template).compile(options)
   end
 
   ##
@@ -51,7 +53,7 @@ class HTX
   ##
   # Compiles the HTX template.
   #
-  def compile
+  def compile(options = EMPTY_HASH)
     doc = Nokogiri::HTML::DocumentFragment.parse(@template)
     root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
 
@@ -71,7 +73,7 @@ class HTX
     @compiled.rstrip!
 
     <<~EOS
-      window['#{@name}'] = function(htx) {
+      #{options[:assign_to] || 'window'}['#{@name}'] = function(htx) {
         #{@compiled}
       }
     EOS

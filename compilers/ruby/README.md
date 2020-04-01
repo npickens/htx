@@ -29,10 +29,19 @@ template = File.read(File.join('some/asset/dir', path))
 
 HTX.compile(path, template)
 
+# Or to attach to a custom object instead of `window`:
+HTX.compile(path, template, assign_to: 'myTemplates')
+
 # Result:
 #
 #   window['/my/hot/template.htx'] = function(htx) {
 #     ...
+#   }
+#
+# If `assign_to` is specified:
+#
+#   myTemplates['/components/people.htx'] = function(htx) {
+#     // ...
 #   }
 ```
 

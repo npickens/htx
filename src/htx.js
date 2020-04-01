@@ -21,7 +21,8 @@ let HTX = function() {
      * @param context The context (`this` binding) for the template function call (optional).
      */
     static render(object, context) {
-      let htx = instances.get(object) || new HTX(window[object] || object)
+      let htx = instances.get(object) || new HTX((HTX.templates || window)[object] || object)
+      if (!htx) throw `Template not found: ${object}`
 
       if (context) htx._context = context
       htx._template.call(htx._context, htx)

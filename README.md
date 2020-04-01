@@ -267,6 +267,9 @@ path = '/components/people.htx'
 content = File.read("/assets#{path}")
 
 HTX.compile(path, content)
+
+# Or to attach to a custom object instead of `window`:
+HTX.compile(path, content, assign_to: 'myTemplates')
 ```
 
 Result:
@@ -284,7 +287,15 @@ window['/components/people.htx'] = function(htx) {
       }
   htx.close(2)
 }
+
+// If `assign_to` is specified:
+myTemplates['/components/people.htx'] = function(htx) {
+  // ...
+}
 ```
+
+(Note: if the `assign_to` compile option is specified, set `HTX.templates = myTemplates` before rendering
+any templates so HTX knows where to look for compiled template functions.)
 
 Every compiled template function is just a series of calls to the HTX JavaScript library, with any control
 statements from the template inserted appropriately. See the [JavaScript Library](#javascript-library)
