@@ -226,12 +226,14 @@ class HTX
   ].map { |tag| [tag.downcase, tag] }.to_h.freeze
 
   ATTR_MAP = %w[
-    attributeName baseFrequency calcMode clipPathUnits diffuseConstant edgeMode filterUnits
-    gradientTransform gradientUnits kernelMatrix kernelUnitLength keyPoints keySplines keyTimes lengthAdjust
-    limitingConeAngle markerHeight markerUnits markerWidth maskContentUnits maskUnits numOctaves pathLength
-    patternContentUnits patternTransform patternUnits pointsAtX pointsAtY pointsAtZ preserveAlpha
-    preserveAspectRatio primitiveUnits refX refY repeatCount repeatDur requiredExtensions specularConstant
-    specularExponent spreadMethod startOffset stdDeviation stitchTiles surfaceScale systemLanguage
-    tableValues targetX targetY textLength viewBox xChannelSelector yChannelSelector zoomAndPan
+    allowReorder attributeName attributeType autoReverse baseFrequency baseProfile calcMode clipPathUnits
+    contentScriptType contentStyleType diffuseConstant edgeMode externalResourcesRequired filterRes
+    filterUnits glyphRef gradientTransform gradientUnits kernelMatrix kernelUnitLength keyPoints keySplines
+    keyTimes lengthAdjust limitingConeAngle markerHeight markerUnits markerWidth maskContentUnits maskUnits
+    numOctaves pathLength patternContentUnits patternTransform patternUnits pointsAtX pointsAtY pointsAtZ
+    preserveAlpha preserveAspectRatio primitiveUnits refX refY referrerPolicy repeatCount repeatDur
+    requiredExtensions requiredFeatures specularConstant specularExponent spreadMethod startOffset
+    stdDeviation stitchTiles surfaceScale systemLanguage tableValues targetX targetY textLength viewBox
+    viewTarget xChannelSelector yChannelSelector zoomAndPan
   ].map { |attr| [attr.downcase, attr] }.to_h.freeze
 end
