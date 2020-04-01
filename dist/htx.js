@@ -1,9 +1,9 @@
 /**
  * HTX
- * Copyright 2019 Nate Pickens
+ * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
- * @version 0.0.2
+ * @version 0.0.3
  */
 let HTX = function() {
   const CHILDLESS = 0b01

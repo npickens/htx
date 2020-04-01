@@ -1,13 +1,23 @@
 /**
  * HTXComponent
- * Copyright 2019 Nate Pickens
+ * Copyright 2019-2020 Nate Pickens
  *
  * @license MIT
- * @version 0.0.2
+ * @version 0.0.3
  */
 let HTXComponent = function() {
-  let isMounting = false
-  let mountQueue = []
+  let isMounting
+  let renderRoot
+  let didRenders = []
+
+  function runDidRenders() {
+    for (let [component, initial] of didRenders) {
+      component.didRender(initial)
+    }
+
+    renderRoot = null
+    didRenders = []
+  }
 
   return class {
     constructor(htxPath) {
@@ -17,49 +27,39 @@ let HTXComponent = function() {
     }
 
     render() {
-      if (!this._isMounted && !isMounting) {
+      let initial = !this.node
+
+      if (initial && !isMounting) {
         throw('Cannot render unmounted component (call mount() instead of render())')
       }
 
-      let initial = !this.node
-
+      renderRoot = renderRoot || this
       this.node = HTX.render(this.node || this.htxPath, this)
 
-      if (this.didRender) {
-        if (this._isMounted) {
-          this.didRender(initial)
-        } else if (initial) {
-          mountQueue.push(this)
-        }
-      }
+      if (this.didRender) didRenders.push([this, initial])
+      if (!isMounting && renderRoot == this) runDidRenders()
 
       return this.node
     }
 
     mount(...args) {
+      isMounting = true
+
       let placement = args.find((a) => typeof a == 'string') || 'append'
       let placementNode = args.find((a) => typeof a != 'string') || document.body
+      let node = this.render()
 
-      isMounting = true
-      mountQueue = []
+      placement == 'prepend' ? placementNode.prepend(node) :
+      placement == 'append' ? placementNode.append(node) :
+      placement == 'replace' ? placementNode.parentNode.replaceChild(node, placementNode) :
+      placement == 'before' ? placementNode.parentNode.insertBefore(node, placementNode) :
+      placement == 'after' ? placementNode.parentNode.insertBefore(node, placementNode.nextSibling) :
+      node = null
 
-      this.render()
+      if (!node) throw `Unrecognized placement type: ${placement}`
 
-      switch (placement) {
-        case 'prepend': placementNode.prepend(this.node); break
-        case 'append': placementNode.append(this.node); break
-        case 'replace': placementNode.parentNode.replaceChild(this.node, placementNode); break
-        case 'before': placementNode.parentNode.insertBefore(this.node, placementNode); break
-        case 'after': placementNode.parentNode.insertBefore(this.node, placementNode.nextSibling); break
-        default: throw `Unrecognized placement type: ${placement}`
-      }
-
-      for (let component of mountQueue) {
-        component._isMounted = true
-        component.didRender(true)
-      }
-
-      mountQueue = []
+      runDidRenders()
+      isMounting = false
     }
   }
 }()
