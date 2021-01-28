@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby --enable=frozen_string_literal
+
+############################################################################################################
+## Requires                                                                                               ##
+############################################################################################################
+
+require('bundler/setup')
+require('open-uri')
+
+Bundler.require(:default)
+
+############################################################################################################
+## Config                                                                                                 ##
+############################################################################################################
+
+MAX_LINE_LENGTH = 108
+CODE_FILE_WITH_MAPS = File.join(File.expand_path('../../', __FILE__), 'lib/htx.rb').freeze
+
+############################################################################################################
+## Run                                                                                                    ##
+############################################################################################################
+
+code = File.read(CODE_FILE_WITH_MAPS)
+
+[
+  ['TAG_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Element'],
+  ['ATTR_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute'],
+].each.with_index do |(const, url), i|
+  const_regex = /(#{const} = %w\[\n)( *)([\w \n]+)(\n *)/.freeze
+
+  unless code =~ const_regex
+    abort("Something has changed in htx.rb: cannot find #{const} definition")
+  end
+
+  doc = Nokogiri::HTML(URI.open(url))
+  elements = doc.css('div.index > ul > li a')
+                .map { |n| n.text.match(/^\<?([^>]+)\>?$/)[1] }
+                .select { |t| t =~ /[A-Z]/ }
+                .sort
+
+  code.sub!(const_regex) do
+    prefix, indent, suffix = $1, $2, $4
+    length = MAX_LINE_LENGTH - indent.size
+    items = elements.join(' ').gsub(/([\w ]{,#{length}})( |$)/, "\\1\n#{indent}").rstrip
+
+    "#{prefix}#{indent}#{items}#{suffix}"
+  end
+end
+
+File.open(CODE_FILE_WITH_MAPS, 'w') { |f| f.write(code) }
