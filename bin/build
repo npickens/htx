@@ -175,11 +175,18 @@ def puts_yellow(str) puts("\e[1;33m\u270e #{str}\e[0m") end
 def puts_green(str)  puts("\e[1;32m\u2714 #{str}\e[0m") end
 
 def command(command, capture_output: false)
-  output = ''.dup
+  Open3.popen2("#{command} 2>&1") do |stdin, stdout_stderr, thread|
+    prefix = '  '
+    output = ''.dup
 
-  Open3.popen2e(command) do |stdin, stdout_and_stderr, thread|
-    while (line = stdout_and_stderr.gets)
-      capture_output ? (output << line) : puts("  #{line}")
+    Thread.new do
+      begin
+        while (line = stdout_stderr.gets)
+          capture_output ? (output << line) : puts("#{prefix}#{line}")
+        end
+      rescue IOError => e
+        raise unless stdout_stderr.closed? && e.message == 'stream closed in another thread'
+      end
     end
 
     capture_output ? [output, thread.value.exitstatus] : thread.value.exitstatus
