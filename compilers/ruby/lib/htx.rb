@@ -14,13 +14,14 @@ class HTX
 
   DYNAMIC_KEY_ATTR = 'htx-key'
 
-  LEADING_WHITESPACE = /\A *\n */.freeze
-  TRAILING_WHITESPACE = /\n *\z/.freeze
-  NON_BLANK_NON_FIRST_LINE = /(?<=\n) *(?=\S)/.freeze
-  NEWLINE_NON_BLANK = /\n(?=[^\n]+)/.freeze
+  LEADING_WHITESPACE = /\A[ \t]*\n[ \t]*/.freeze
+  TRAILING_WHITESPACE = /\n[ \t]*\z/.freeze
+  NON_BLANK_NON_FIRST_LINE = /(?<=\n)[ \t]*(?=\S)/.freeze
+  NEWLINE_NON_BLANK = /\n(?=[^\n])/.freeze
+  INDENT_GUESS = /^[ \t]+/.freeze
 
-  END_STATEMENT_END = /(;|\n|\{|\}) *\z/.freeze
-  BEGIN_STATEMENT_END = /\A *(;|\{|\n|\})/.freeze
+  END_STATEMENT_END = /(;|\n|\{|\})[ \t]*\z/.freeze
+  BEGIN_STATEMENT_END = /\A[ \t]*(;|\{|\n|\})/.freeze
   END_WHITESPACE = /\s\z/.freeze
   BEGIN_WHITESPACE = /\A\s/.freeze
 
