@@ -4,15 +4,18 @@
 ## Requires                                                                                               ##
 ############################################################################################################
 
-require('bundler/setup')
+require('bundler')
+
+Dir.chdir(File.expand_path('../..', __FILE__))
+Bundler.setup(:default, :development)
+
+require('htx')
 require('minitest/autorun')
 
-Bundler.require(:default)
-
 ############################################################################################################
-## Test                                                                                                   ##
+## Run                                                                                                    ##
 ############################################################################################################
 
-Dir[File.expand_path('../../test/**/*_test.rb', __FILE__)].each do |file|
+Dir[File.expand_path('test/**/*_test.rb')].each do |file|
   require(file)
 end

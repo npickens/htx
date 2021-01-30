@@ -4,17 +4,20 @@
 ## Requires                                                                                               ##
 ############################################################################################################
 
-require('bundler/setup')
-require('open-uri')
+require('bundler')
 
-Bundler.require(:default)
+Dir.chdir(File.expand_path('../..', __FILE__))
+Bundler.setup(:default)
+
+require('nokogiri')
+require('open-uri')
 
 ############################################################################################################
 ## Config                                                                                                 ##
 ############################################################################################################
 
 MAX_LINE_LENGTH = 108
-CODE_FILE_WITH_MAPS = File.join(File.expand_path('../../', __FILE__), 'lib/htx.rb').freeze
+CODE_FILE_WITH_MAPS = File.join(File.expand_path('lib/htx.rb')).freeze
 
 ############################################################################################################
 ## Run                                                                                                    ##
