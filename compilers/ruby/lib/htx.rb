@@ -12,6 +12,7 @@ class HTX
   TEXT_NODE = 0b10
   FLAG_BITS = 2
 
+  INDENT_DEFAULT = '  '
   DYNAMIC_KEY_ATTR = 'htx-key'
 
   LEADING_WHITESPACE = /\A[ \t]*\n[ \t]*/.freeze
@@ -52,7 +53,11 @@ class HTX
   end
 
   ##
-  # Compiles the HTX template.
+  # Compiles the HTX template. Options:
+  #
+  # * :indent - Indent output by this number of spaces if Numeric, or by this string if a String (if the
+  #     latter, may only contain space and tab characters).
+  # * :assign_to - Assign the template function to this JavaScript object instead of the `window` object.
   #
   def compile(options = EMPTY_HASH)
     doc = Nokogiri::HTML::DocumentFragment.parse(@template)
@@ -70,12 +75,21 @@ class HTX
     @compiled = ''.dup
     @static_key = 0
 
+    @indent =
+      if options[:indent].kind_of?(Numeric)
+        ' ' * options[:indent]
+      elsif options[:indent].kind_of?(String) && options[:indent] !~ /^[ \t]+$/
+        raise("Invalid :indent value #{options[:indent].inspect}: only spaces and tabs are allowed")
+      else
+        options[:indent] || @template[INDENT_GUESS] || INDENT_DEFAULT
+      end
+
     process(doc)
     @compiled.rstrip!
 
     <<~EOS
       #{options[:assign_to] || 'window'}['#{@name}'] = function(htx) {
-        #{@compiled}
+      #{@indent}#{@compiled}
       }
     EOS
   end
@@ -155,7 +169,7 @@ class HTX
     elsif @compiled !~ END_WHITESPACE && text !~ BEGIN_WHITESPACE
       @compiled << ' '
     elsif @compiled[-1] == "\n"
-      @compiled << '  '
+      @compiled << @indent
     end
 
     @compiled << text
@@ -167,7 +181,7 @@ class HTX
   def indent(text)
     return '' unless text
 
-    text.gsub!(NEWLINE_NON_BLANK, "\n  ")
+    text.gsub!(NEWLINE_NON_BLANK, "\n#{@indent}")
     text
   end
 
