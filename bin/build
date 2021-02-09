@@ -4,50 +4,114 @@ require('fileutils')
 require('open3')
 
 ############################################################################################################
-## Constants                                                                                              ##
-############################################################################################################
-
-BASE_DIR = File.expand_path('../../', __FILE__).freeze
-SRC_DIR = File.join(BASE_DIR, 'src').freeze
-DIST_DIR = File.join(BASE_DIR, 'dist').freeze
-
-GEMSPEC_FILE = File.join(BASE_DIR, 'compilers/ruby/htx.gemspec').freeze
-RUBY_FILE_WITH_VERSION = File.join(BASE_DIR, 'compilers/ruby/lib/htx.rb').freeze
-
-VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
-
-############################################################################################################
 ## Command Line Options                                                                                   ##
 ############################################################################################################
 
-abort('Usage: bin/build {major|minor|patch}') unless %w[major minor patch].include?(ARGV.join)
+unless ARGV.size == 1 && [:major, :minor, :patch].include?(bump = ARGV.shift.to_s.strip.to_sym)
+  abort('Usage: bin/build {major|minor|patch}')
+end
 
-major, minor, patch = File.read(VERSION_FILE).strip.split('.').map(&:to_i)
+############################################################################################################
+## Constants                                                                                              ##
+############################################################################################################
 
-VERSION =
-  case ARGV.shift.to_sym
+BASE_DIR = File.expand_path(File.join('..', '..'), __FILE__).freeze
+RUBY_DIR = File.join(BASE_DIR, 'compilers', 'ruby').freeze
+SRC_DIR = File.join(BASE_DIR, 'src').freeze
+DIST_DIR = File.join(BASE_DIR, 'dist').freeze
+VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
+
+RUBY_TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
+RUBY_GEMSPEC_FILE = File.join(RUBY_DIR, 'htx.gemspec').freeze
+RUBY_FILE_WITH_VERSION = File.join(RUBY_DIR, 'lib', 'htx.rb').freeze
+
+OLD_VERSION = File.read(VERSION_FILE).strip.freeze
+major, minor, patch = OLD_VERSION.split('.').map(&:to_i)
+NEW_VERSION =
+  case bump
   when :major then "#{major + 1}.0.0"
   when :minor then "#{major}.#{minor + 1}.0"
   when :patch then "#{major}.#{minor}.#{patch + 1}"
   end
+
+BUILD_LIBS = [
+  {name: 'Terser', cmd_check: 'which terser', cmd_install: 'npm install -g terser'}.freeze,
+  {name: 'NPM', cmd_check: 'which npm', cmd_install: 'brew install npm'}.freeze,
+  {name: 'Homebrew', cmd_check: 'which brew', cmd_install: '/bin/bash -c "$(curl -fsSL ' +
+    'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'}.freeze,
+  {name: 'Ruby gems', cmd_check: "cd #{RUBY_DIR} && bundle check", cmd_install: "cd #{RUBY_DIR} && " +
+    'bundle install'},
+].freeze
+
+############################################################################################################
+## Install Dependencies                                                                                   ##
+############################################################################################################
+
+def install_dependencies
+  missing = BUILD_LIBS.each_with_object([]) do |info, missing|
+    output, status = command(info[:cmd_check], capture_output: true)
+    status == 0 ? next : missing.unshift(info)
+  end
+
+  if missing.empty?
+    finish_task(0, 'Dependencies are installed')
+    return
+  end
+
+  begin_task('Some dependencies need to be installed')
+
+  print("Install #{missing.map { |l| l[:name] }.join(', ')}? (y/n) ")
+  finish_task(1, '', 'Build aborted') if gets.strip.downcase != 'y'
+
+  missing.each do |info|
+    begin_task("Installing #{info[:name]}...")
+
+    status = command(info[:cmd_install])
+
+    finish_task(status, "#{info[:name]} installed successfully!", "#{info[:name]} installation failed :(")
+  end
+end
+
+############################################################################################################
+## Test                                                                                                   ##
+############################################################################################################
+
+def test
+  begin_task('Running tests...')
+
+  status = command(RUBY_TEST_COMMAND)
+
+  finish_task(status, 'Tests passed', 'Build aborted')
+end
+
+############################################################################################################
+## Update Version                                                                                         ##
+############################################################################################################
+
+def update_version(version = NEW_VERSION, quiet = false)
+  begin_task('Updating version number...') unless quiet
+
+  ruby = File.read(RUBY_FILE_WITH_VERSION)
+  ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{version}'")
+
+  File.write(RUBY_FILE_WITH_VERSION, ruby)
+  File.write(VERSION_FILE, "#{version}\n")
+
+  finish_task(0, 'Version number updated') unless quiet
+end
 
 ############################################################################################################
 ## Build                                                                                                  ##
 ############################################################################################################
 
 def build_ruby
-  puts_yellow('Building Ruby gem...')
+  begin_task('Building Ruby gem...')
 
-  ruby = File.read(RUBY_FILE_WITH_VERSION)
-  ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{VERSION}'")
-  File.open(RUBY_FILE_WITH_VERSION, 'w') { |f| f.write(ruby) }
+  status = command("cd #{File.dirname(RUBY_GEMSPEC_FILE)} && gem build #{File.basename(RUBY_GEMSPEC_FILE)}")
 
-  if (status = command("cd #{File.dirname(GEMSPEC_FILE)} && gem build #{File.basename(GEMSPEC_FILE)}")) == 0
-    puts_green('Ruby gem built')
-  else
-    puts_red('Build aborted')
-    exit(status)
-  end
+  finish_task(status, 'Ruby gem built', 'Build aborted')
+ensure
+  (update_version(OLD_VERSION, :quiet) rescue nil) if status != 0
 end
 
 def build_javascript
@@ -65,12 +129,11 @@ def build_javascript
 
     if status != 0
       puts(minified)
-      puts_red('Build aborted')
-      exit(status)
+      finish_task(status, '', 'Build aborted')
     end
 
     name = original[/^\/\*\*\n \* ([^\n]+)/m, 1]
-    comment = comment(name)
+    comment = javascript_comment(name)
 
     original.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
     original.gsub!(/^ *\/\/.*\n/, '')
@@ -86,93 +149,31 @@ def build_javascript
 
   if status != 0
     puts(minified)
-    puts_red('Build aborted')
-    exit(status)
+    finish_task(status, '', 'Build aborted')
   end
 
   File.write(File.join(DIST_DIR, 'htx-all.js'), all.map(&:last).join("\n"))
-  File.write(File.join(DIST_DIR, 'htx-all.min.js'), comment(all.map(&:first).join(', ')) + minified)
+  File.write(File.join(DIST_DIR, 'htx-all.min.js'), javascript_comment(all.map(&:first).join(', ')) +
+    minified)
 
-  puts_green('JavaScript files built')
+  finish_task(0, 'JavaScript files built')
 end
 
-def comment(name)
+def javascript_comment(name)
   <<~eos
     /**
      * #{name}
      * Copyright 2019-2021 Nate Pickens
      *
      * @license MIT
-     * @version #{VERSION}
+     * @version #{NEW_VERSION}
      */
   eos
 end
 
 ############################################################################################################
-## Test                                                                                                   ##
-############################################################################################################
-
-def test
-  puts_yellow("Running tests...")
-
-  current_dir = Dir.pwd
-  ruby_dir = File.expand_path('../../compilers/ruby', __FILE__)
-
-  if (status = command("cd #{ruby_dir} && bin/test && cd #{current_dir}")) == 0
-    puts_green("Tests passed")
-  else
-    puts_red("Build aborted")
-    exit(status)
-  end
-end
-
-############################################################################################################
-## Install                                                                                                ##
-############################################################################################################
-
-LIBS = [
-  {name: 'Terser', cmd_check: 'which terser', cmd_install: 'npm install -g terser'},
-  {name: 'NPM', cmd_check: 'which npm', cmd_install: 'brew install npm'},
-  {name: 'Homebrew', cmd_check: 'which brew', cmd_install:
-    'ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"'},
-].freeze
-
-def install
-  needed = LIBS.inject([]) do |needed, lib|
-    (`#{lib[:cmd_check]}` && $? == 0) ? (break needed) : needed.push(lib)
-  end.reverse
-
-  if needed.empty?
-    puts_green('Dependencies are installed')
-    return
-  end
-
-  print("Install #{needed.map { |l| l[:name] }.join(', ')}? (y/n) ")
-
-  if gets.strip.downcase != 'y'
-    puts_red('Build aborted')
-    exit(1)
-  end
-
-  needed.each do |lib|
-    puts_yellow("Installing #{lib[:name]}...")
-
-    if (status = command(lib[:cmd_install])) == 0
-      puts_green("#{lib[:name]} installed successfully!")
-    else
-      puts_red("#{name} installation failed :(")
-      exit(status)
-    end
-  end
-end
-
-############################################################################################################
 ## Utils                                                                                                  ##
 ############################################################################################################
-
-def puts_red(str)    puts("\e[1;31m\u2718 #{str}\e[0m") end
-def puts_yellow(str) puts("\e[1;33m\u270e #{str}\e[0m") end
-def puts_green(str)  puts("\e[1;32m\u2714 #{str}\e[0m") end
 
 def command(command, capture_output: false)
   Open3.popen2("#{command} 2>&1") do |stdin, stdout_stderr, thread|
@@ -193,16 +194,25 @@ def command(command, capture_output: false)
   end
 end
 
-def bump_version
-  File.open(VERSION_FILE, 'w') { |f| f.write(VERSION + "\n") }
+def begin_task(str)
+  puts("\e[1;33m\u270e #{str}\e[0m")
+end
+
+def finish_task(status, success, failure = nil)
+  if status == 0
+    puts("\e[1;32m\u2714 #{success}\e[0m")
+  else
+    puts("\e[1;31m\u2718 #{failure}\e[0m")
+    exit(status)
+  end
 end
 
 ############################################################################################################
 
-install
+install_dependencies
 test
-bump_version
+update_version
 build_ruby
 build_javascript
 
-puts_green("Version #{VERSION} built successfully!")
+finish_task(0, "Version #{NEW_VERSION} built successfully!")
