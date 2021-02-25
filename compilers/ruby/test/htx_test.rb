@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class HTXTest < Minitest::Test
   # NOTE: More granular tests are forthcoming.
 

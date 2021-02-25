@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class HTXTest < Minitest::Test
   describe('HTX.compile') do
     it('properly formats output of tab-indented templates') do
