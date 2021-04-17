@@ -10,6 +10,8 @@ let HTX = function() {
   const FLAG_MASK = 0b11
   const FLAG_BITS = 2
 
+  const UNKNOWN_PLACEHOLDER = '[HTX:unknown]'
+
   let instances = new WeakMap
 
   return class {
@@ -97,7 +99,12 @@ let HTX = function() {
       // If current node is an exact match, use it.
       if (
         this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) == dynamicKey
+        this._dynamicKeys.get(currentNode) == dynamicKey && !(
+          currentNode instanceof Comment &&
+          currentNode.nodeValue == UNKNOWN_PLACEHOLDER &&
+          object !== null &&
+          object !== undefined
+        )
       ) {
         node = currentNode
 
@@ -105,12 +112,14 @@ let HTX = function() {
           node.nodeValue = object
         }
       } else {
-        if (object instanceof Node) {
+        if (object === null || object === undefined) {
+          node = document.createComment(UNKNOWN_PLACEHOLDER)
+        } else if (object instanceof Node) {
           node = object
         } else if (object && object.render instanceof Function) {
           node = object.render()
-        } else if (!object || flags & TEXT_NODE) {
-          node = document.createTextNode((object === null || object === undefined) ? '' : object)
+        } else if (flags & TEXT_NODE) {
+          node = document.createTextNode(object)
         } else if (object == 'svg' || this.svg) {
           node = document.createElementNS('http://www.w3.org/2000/svg', object)
           this.svg = true
