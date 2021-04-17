@@ -41,7 +41,7 @@ let HTXComponent = function() {
     render() {
       let initial = !this.node
 
-      if (initial && !isMounting) {
+      if (initial && !isMounting && !renderRoot) {
         throw 'Cannot render unmounted component (call mount() instead of render())'
       }
 
