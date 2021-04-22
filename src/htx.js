@@ -127,6 +127,9 @@ let HTX = function() {
           node = document.createElement(object)
         }
 
+        this._staticKeys.delete(currentNode)
+        this._dynamicKeys.delete(currentNode)
+
         this._staticKeys.set(node, staticKey)
         this._dynamicKeys.set(node, dynamicKey)
       }
