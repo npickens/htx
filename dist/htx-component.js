@@ -1,9 +1,9 @@
 /**
  * HTXComponent
- * Copyright 2019-2020 Nate Pickens
+ * Copyright 2019-2021 Nate Pickens
  *
  * @license MIT
- * @version 0.0.4
+ * @version 0.0.5
  */
 let HTXComponent = function() {
   let isMounting
@@ -27,8 +27,8 @@ let HTXComponent = function() {
     render() {
       let initial = !this.node
 
-      if (initial && !isMounting) {
-        throw('Cannot render unmounted component (call mount() instead of render())')
+      if (initial && !isMounting && !renderRoot) {
+        throw 'Cannot render unmounted component (call mount() instead of render())'
       }
 
       renderRoot = renderRoot || this
