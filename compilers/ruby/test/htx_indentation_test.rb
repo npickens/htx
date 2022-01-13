@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
-class HTXTest < Minitest::Test
-  describe('HTX.compile') do
-    it('properly formats output of tab-indented templates') do
+require('htx')
+require('minitest/autorun')
+require_relative('test_helper')
+
+class HTXIndentationTest < Minitest::Test
+  include(TestHelper)
+
+  context(HTX, '::compile') do
+    test('properly formats output of tab-indented templates') do
       template_name = '/tab-indent.htx'
       template_content = <<~EOS
         <div>
@@ -23,7 +29,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
 
-    it('indents by default amount if :indent option is not provided and template has no indentation') do
+    test('indents by default amount if :indent option is not provided and template has no indentation') do
       template_name = '/indent.htx'
       template_content = "<div>Hello</div>"
 
@@ -36,7 +42,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
 
-    it('indents by first indented line\'s whitespace if :indent option is not supplied') do
+    test('indents by first indented line\'s whitespace if :indent option is not supplied') do
       template_name = '/indent.htx'
       template_content = <<~EOS
         <div>
@@ -57,7 +63,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
 
-    it('indents by specified number spaces if :indent option is numeric') do
+    test('indents by specified number spaces if :indent option is numeric') do
       template_name = '/indent.htx'
       template_content = <<~EOS
         <div>
@@ -78,7 +84,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content, indent: 5))
     end
 
-    it('indents with :indent option if it is a string') do
+    test('indents with :indent option if it is a string') do
       template_name = '/indent.htx'
       template_content = <<~EOS
         <div>
@@ -99,7 +105,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content, indent: "\t"))
     end
 
-    it('raises error if :indent option is a string that contains characters other than spaces and tabs') do
+    test('raises error if :indent option is a string containing characters other than spaces and tabs') do
       assert_raises do
         HTX.compile('/template.htx', '<div></div>', indent: " \t>")
       end
