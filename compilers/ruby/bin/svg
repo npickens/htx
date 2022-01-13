@@ -27,9 +27,11 @@ CODE_FILE_WITH_MAPS = File.join(File.expand_path('lib/htx.rb')).freeze
 code = File.read(CODE_FILE_WITH_MAPS)
 
 [
-  ['TAG_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Element'],
-  ['ATTR_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute'],
-].each.with_index do |(const, url), i|
+  ['TAG_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Element',
+    'article.main-page-content > div > ul > li > a > code'],
+  ['ATTR_MAP', 'https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute',
+    'article.main-page-content > div > ul > li > code > a'],
+].each.with_index do |(const, url, css), i|
   const_regex = /(#{const} = %w\[\n)( *)([\w \n]+)(\n *)/.freeze
 
   unless code =~ const_regex
@@ -37,7 +39,7 @@ code = File.read(CODE_FILE_WITH_MAPS)
   end
 
   doc = Nokogiri::HTML(URI.open(url))
-  elements = doc.css('div.index > ul > li a')
+  elements = doc.css(css)
                 .map { |n| n.text.match(/^\<?([^>]+)\>?$/)[1] }
                 .select { |t| t =~ /[A-Z]/ }
                 .sort
