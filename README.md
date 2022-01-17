@@ -190,15 +190,16 @@ individual parts. Any object that is mixed with string content will be cast to a
 
 #### Tagless Output
 
-Content can be rendered without an enclosing tag by wrapping it in HTX's dummy tag, `<:>...</:>`. This is
-useful within a control loop or conditional when output is desired with no enclosing tag. (Note: dummy tags
-may not contain any child tags.)
+Content can be rendered without an enclosing tag (i.e. as an HTML text node rather than element node) by
+wrapping it in HTX's special text node tag, `<htx-text>...</htx-text>`. This is useful within a control loop
+or conditional when output is desired with no enclosing tag. (Note: text node tags may not contain any child
+tags.)
 
 ```html
 <!-- Template -->
 <div class='names'>
   for (let person of this.people) {
-    <:>${person.name}...</:>
+    <htx-text>${person.name}...</htx-text>
   }
 </div>
 

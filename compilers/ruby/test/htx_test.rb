@@ -28,9 +28,9 @@ class HTXTest < Minitest::Test
       end
     end
 
-    test('raises an error if a dummy tag contains a child tag') do
+    test('raises an error if a text node tag contains a child tag') do
       assert_raises(HTX::MalformedTemplateError) do
-        HTX.compile('/template.htx', "<:>Hello<b>!</b></:>")
+        HTX.compile('/template.htx', "<htx-text>Hello<b>!</b></htx-text>")
       end
     end
 
