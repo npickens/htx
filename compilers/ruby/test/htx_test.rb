@@ -101,5 +101,54 @@ class HTXTest < Minitest::Test
 
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
+
+    test('adds appropriate xmlns attribute if none is set on <math> and <svg> tags') do
+      {
+        'math' => 'http://www.w3.org/1998/Math/MathML',
+        'svg' => 'http://www.w3.org/2000/svg',
+      }.each do |tag, xmlns|
+        template1_name = "/components/#{tag}1.htx"
+        template1_content = "<#{tag}></#{tag}>"
+        compiled1 = <<~EOS
+          window['#{template1_name}'] = function(htx) {
+            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 13)
+          }
+        EOS
+
+        template2_name = "/components/#{tag}2.htx"
+        template2_content = "<#{tag} class='hello'></#{tag}>"
+        compiled2 = <<~EOS
+          window['#{template2_name}'] = function(htx) {
+            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 'class', `hello`, 13)
+          }
+        EOS
+
+        assert_equal(compiled1, HTX.compile(template1_name, template1_content))
+        assert_equal(compiled2, HTX.compile(template2_name, template2_content))
+      end
+    end
+
+    test('does not modify xmlns attribute when one is set on <math> and <svg> tags') do
+      %w[math svg].each do |tag|
+        template1_name = "/components/#{tag}1.htx"
+        template1_content = "<#{tag} xmlns='custom-xmlns'></#{tag}>"
+        compiled1 = <<~EOS
+          window['#{template1_name}'] = function(htx) {
+            htx.node('#{tag}', 'xmlns', `custom-xmlns`, 13)
+          }
+        EOS
+
+        template2_name = "/components/#{tag}2.htx"
+        template2_content = "<#{tag} class='hello' xmlns='custom-xmlns'></#{tag}>"
+        compiled2 = <<~EOS
+          window['#{template2_name}'] = function(htx) {
+            htx.node('#{tag}', 'class', `hello`, 'xmlns', `custom-xmlns`, 13)
+          }
+        EOS
+
+        assert_equal(compiled1, HTX.compile(template1_name, template1_content))
+        assert_equal(compiled2, HTX.compile(template2_name, template2_content))
+      end
+    end
   end
 end

@@ -17,6 +17,11 @@ class HTX
   TEXT_NODE_TAG = 'htx-text'
   DYNAMIC_KEY_ATTR = 'htx-key'
 
+  DEFAULT_XMLNS = {
+    'math' => 'http://www.w3.org/1998/Math/MathML',
+    'svg' => 'http://www.w3.org/2000/svg',
+  }.freeze
+
   LEADING_WHITESPACE = /\A[ \t]*\n[ \t]*/.freeze
   TRAILING_WHITESPACE = /\n[ \t]*\z/.freeze
   NON_BLANK_NON_FIRST_LINE = /(?<=\n)[ \t]*(?=\S)/.freeze
@@ -226,11 +231,21 @@ class HTX
   # Processes a node's attributes, returning two items: a flat array of attribute names and values, and a
   # boolean indicating whether or not an xmlns attribute is present.
   #
+  # Note: if the node is a <math> or <svg> tag without an explicit xmlns attribute set, an appropriate one
+  # will be automatically added since it is required for those elements to render properly.
+  #
   # * +node+ - Nokogiri node to process for attributes.
   #
   def process_attrs(node)
     attrs = []
     xmlns = !!node.attributes['xmlns']
+
+    if !xmlns && DEFAULT_XMLNS[node.name]
+      xmlns = true
+
+      attrs << "'xmlns'"
+      attrs << process_value(DEFAULT_XMLNS[node.name], :attr)
+    end
 
     node.attributes.each do |_, attr|
       next if attr.name == DYNAMIC_KEY_ATTR
