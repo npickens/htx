@@ -8,9 +8,10 @@ require('nokogiri')
 class HTX
   VERSION = '0.0.5'
 
-  CHILDLESS = 0b01
-  TEXT_NODE = 0b10
-  FLAG_BITS = 2
+  CHILDLESS  = 0b001
+  TEXT_NODE  = 0b010
+  XMLNS_NODE = 0b100
+  FLAG_BITS  = 3
 
   INDENT_DEFAULT = '  '
   TEXT_NODE_TAG = 'htx-text'
@@ -133,20 +134,14 @@ class HTX
           append(indent(text))
         end
       else
-        attrs = node.attributes.inject([]) do |attrs, (_, attr)|
-          next attrs if attr.name == DYNAMIC_KEY_ATTR
-
-          attrs << "'#{ATTR_MAP[attr.name] || attr.name}'"
-          attrs << process_value(attr.value, :attr)
-        end
-
         childless = node.children.empty? || (node.children.size == 1 && node.children[0].text.strip == '')
+        attrs, xmlns = process_attrs(node)
 
         append("htx.node(#{[
           "'#{TAG_MAP[node.name] || node.name}'",
           attrs,
           dynamic_key,
-          ((@static_key += 1) << FLAG_BITS) | (childless ? CHILDLESS : 0),
+          ((@static_key += 1) << FLAG_BITS) | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS_NODE : 0),
         ].compact.flatten.join(', ')})")
 
         unless childless
@@ -225,6 +220,26 @@ class HTX
     # `document.createTextNode` calls as Unicode escape sequences rather than (incorrectly) as HTML
     # entities.
     value.encode('ascii', fallback: ->(c) { "\\u#{c.ord.to_s(16).rjust(4, '0')}" })
+  end
+
+  ##
+  # Processes a node's attributes, returning two items: a flat array of attribute names and values, and a
+  # boolean indicating whether or not an xmlns attribute is present.
+  #
+  # * +node+ - Nokogiri node to process for attributes.
+  #
+  def process_attrs(node)
+    attrs = []
+    xmlns = !!node.attributes['xmlns']
+
+    node.attributes.each do |_, attr|
+      next if attr.name == DYNAMIC_KEY_ATTR
+
+      attrs << "'#{ATTR_MAP[attr.name] || attr.name}'"
+      attrs << process_value(attr.value, :attr)
+    end
+
+    [attrs, xmlns]
   end
 
   class MalformedTemplateError < StandardError
