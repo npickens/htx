@@ -1,6 +1,6 @@
 /**
  * HTX
- * Copyright 2019-2021 Nate Pickens
+ * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
  */

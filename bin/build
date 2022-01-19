@@ -166,7 +166,7 @@ def javascript_comment(name)
   <<~eos
     /**
      * #{name}
-     * Copyright 2019-2021 Nate Pickens
+     * Copyright 2019-2022 Nate Pickens
      *
      * @license MIT
      * @version #{NEW_VERSION}
