@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require('io/console')
+require('json')
+
+BASE_DIR = File.dirname(__dir__).freeze
+SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
+GRAPH_WIDTH = [IO.console.winsize.last, 200].min - 30
+
+data = JSON.parse(File.exists?(SIZES_FILE) ? File.read(SIZES_FILE) : '{}')
+max_value = data.map { |path, sizes| sizes.values }.flatten.max
+
+data.each do |path, sizes|
+  puts("\e[4m#{path}\e[24m")
+
+  sizes.each do |version, (size_norm, size_gzip)|
+    count_gzip = ((size_gzip / max_value.to_f) * GRAPH_WIDTH).round(0)
+    count_norm = ((size_norm / max_value.to_f) * GRAPH_WIDTH).round(0) - count_gzip
+
+    size_norm = "#{(size_norm / 1024.0).round(2)}K" if size_norm >= 1024
+    size_gzip = "#{(size_gzip / 1024.0).round(2)}K" if size_gzip >= 1024
+
+    puts(
+      "  #{version}: "\
+      "\e[36m#{'=' * count_gzip}\e[39m"\
+      "\e[35m#{'=' * count_norm}\e[39m"\
+      " \e[36m#{size_gzip}\e[39m, \e[35m#{size_norm}\e[39m"
+    )
+  end
+end
+
+puts("\n\e[36mCyan\e[39m = gzipped, \e[35mPink\e[39m = uncompressed")
