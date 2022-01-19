@@ -63,7 +63,7 @@ class HTXIndentationTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
 
-    test('indents by specified number spaces if :indent option is numeric') do
+    test('indents with :indent number of spaces if value is a number') do
       template_name = '/indent.htx'
       template_content = <<~EOS
         <div>
@@ -84,7 +84,7 @@ class HTXIndentationTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content, indent: 5))
     end
 
-    test('indents with :indent option if it is a string') do
+    test('indents with :indent content if value is a string') do
       template_name = '/indent.htx'
       template_content = <<~EOS
         <div>
