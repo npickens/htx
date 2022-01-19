@@ -277,13 +277,13 @@ Result:
 
 ```javascript
 window['/components/people.htx'] = function(htx) {
-  htx.node('div', 'class', `people`, 4)
-    htx.node('h1', 8); htx.node(this.title, 14); htx.close()
+  htx.node('div', 'class', `people`, 8)
+    htx.node('h1', 16); htx.node(this.title, 26); htx.close()
 
-    htx.node('ul', 'class', `people-list`, 16)
+    htx.node('ul', 'class', `people-list`, 32)
       for (let person of this.people) {
-        htx.node('li', 'class', `person ${person.role}`, 20)
-          htx.node(person.name, 26)
+        htx.node('li', 'class', `person ${person.role}`, 40)
+          htx.node(person.name, 50)
         htx.close()
       }
   htx.close(2)
