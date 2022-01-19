@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require('fileutils')
+require('json')
 require('open3')
 
 ############################################################################################################
@@ -16,11 +17,12 @@ end
 ## Constants                                                                                              ##
 ############################################################################################################
 
-BASE_DIR = File.expand_path(File.join('..', '..'), __FILE__).freeze
+BASE_DIR = File.dirname(__dir__).freeze
 RUBY_DIR = File.join(BASE_DIR, 'compilers', 'ruby').freeze
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze
 VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
+SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
 
 RUBY_TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 RUBY_GEMSPEC_FILE = File.join(RUBY_DIR, 'htx.gemspec').freeze
@@ -173,6 +175,39 @@ def javascript_comment(name)
 end
 
 ############################################################################################################
+## Sizes                                                                                                  ##
+############################################################################################################
+
+def write_sizes
+  data = File.exists?(SIZES_FILE) ? JSON.parse(File.read(SIZES_FILE)) : {}
+
+  Dir[File.join(DIST_DIR, '*.js')].sort.each do |path|
+    (data[File.basename(path)] ||= {})[NEW_VERSION] = [
+      `wc -c #{path}`.strip.to_i,
+      `gzip -c #{path} | wc -c`.strip.to_i,
+    ]
+  end
+
+  buff = +'{'
+
+  data.each do |path, sizes|
+    buff << ',' unless buff[-1] == '{'
+    buff << "\n  \"#{path}\": {"
+
+    sizes.each do |version, values|
+      buff << ',' unless buff[-1] == '{'
+      buff << "\n    \"#{version}\": [#{values.join(', ')}]"
+    end
+
+    buff << "\n  }"
+  end
+
+  buff << "\n}\n"
+
+  File.write(SIZES_FILE, buff)
+end
+
+############################################################################################################
 ## Utils                                                                                                  ##
 ############################################################################################################
 
@@ -215,5 +250,6 @@ test
 update_version
 build_ruby
 build_javascript
+write_sizes
 
 finish_task(0, "Version #{NEW_VERSION} built successfully!")
