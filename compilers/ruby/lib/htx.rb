@@ -272,6 +272,12 @@ class HTX
   # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
   # sensitive and often mix cased. These maps are used to restore the correct case of such tags and
   # attributes.
+  #
+  # Note: Nokogiri's newer HTML5 parser resulting from the Nokogumbo merge fixes this issue, but it is
+  # currently not available for JRuby. It also does not parse <:> as a tag, which is why it's been
+  # deprecated in favor of <htx-text>. Once support for <:> has been completely removed, the HTML5 parser
+  # will be used for regular Ruby and this tag and attribute mapping hack reserved for JRuby (and any other
+  # potential environments where the HTML5 parser is not available).
 
   # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Element
   TAG_MAP = %w[
