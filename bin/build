@@ -26,7 +26,8 @@ SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
 
 RUBY_TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 RUBY_GEMSPEC_FILE = File.join(RUBY_DIR, 'htx.gemspec').freeze
-RUBY_FILE_WITH_VERSION = File.join(RUBY_DIR, 'lib', 'htx.rb').freeze
+RUBY_VERSION_FILE = File.join(RUBY_DIR, 'VERSION').freeze
+RUBY_FILE_WITH_VERSION = File.join(RUBY_DIR, 'lib', 'htx', 'version.rb').freeze
 
 OLD_VERSION = File.read(VERSION_FILE).strip.freeze
 major, minor, patch = OLD_VERSION.split('.').map(&:to_i)
@@ -98,6 +99,7 @@ def update_version(version = NEW_VERSION, quiet = false)
   ruby.sub!(/VERSION = (['"])(\d+\.\d+\.\d+)\1/, "VERSION = '#{version}'")
 
   File.write(RUBY_FILE_WITH_VERSION, ruby)
+  File.write(RUBY_VERSION_FILE, "#{version}\n")
   File.write(VERSION_FILE, "#{version}\n")
 
   finish_task(0, 'Version number updated') unless quiet
