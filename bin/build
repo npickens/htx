@@ -9,8 +9,10 @@ require('open3')
 ## Command Line Options                                                                                   ##
 ############################################################################################################
 
-unless ARGV.size == 1 && [:major, :minor, :patch].include?(bump = ARGV.shift.to_s.strip.to_sym)
-  abort('Usage: bin/build {major|minor|patch}')
+bump = :patch
+
+if ARGV.size > 0 && ![:major, :minor, :patch].include?(bump = ARGV[0].to_s.strip.to_sym)
+  abort('Usage: bin/build [major | minor | patch]')
 end
 
 ############################################################################################################
