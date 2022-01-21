@@ -51,6 +51,22 @@ class HTX
   end
 
   ##
+  # Returns false. In the near future when support for the <:> tag has been dropped (in favor of
+  # <htx-text>), will return true if Nokogiri's HTML5 parser is available. To use it now, monkey patch this
+  # method to return true.
+  #
+  def self.html5_parser?
+    false # !!defined?(Nokogiri::HTML5)
+  end
+
+  ##
+  # Returns Nokogiri's HTML5 parser if available and enabled, and Nokogiri's regular HTML parser otherwise.
+  #
+  def self.nokogiri_parser
+    html5_parser? ? Nokogiri::HTML5::DocumentFragment : Nokogiri::HTML::DocumentFragment
+  end
+
+  ##
   # Creates a new HTX instance. Conventionally the path of the template file is used for the name, but it
   # can be anything.
   #
@@ -67,7 +83,7 @@ class HTX
   # * :assign_to - Assign the template function to this JavaScript object instead of the `window` object.
   #
   def compile(options = EMPTY_HASH)
-    doc = Nokogiri::HTML::DocumentFragment.parse(@template)
+    doc = self.class.nokogiri_parser.parse(@template)
     root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
 
     if (text_node = root_nodes.find(&:text?))
@@ -143,7 +159,7 @@ class HTX
         attrs, xmlns = process_attrs(node)
 
         append("htx.node(#{[
-          "'#{TAG_MAP[node.name] || node.name}'",
+          "'#{tag_name(node.name)}'",
           attrs,
           dynamic_key,
           ((@static_key += 1) << FLAG_BITS) | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS_NODE : 0),
@@ -250,11 +266,31 @@ class HTX
     node.attributes.each do |_, attr|
       next if attr.name == DYNAMIC_KEY_ATTR
 
-      attrs << "'#{ATTR_MAP[attr.name] || attr.name}'"
+      attrs << "'#{attr_name(attr.name)}'"
       attrs << process_value(attr.value, :attr)
     end
 
     [attrs, xmlns]
+  end
+
+  ##
+  # Returns the given text if the HTML5 parser is in use, or looks up the value in the tag map to get the
+  # correctly-cased version, falling back to the supplied text if no mapping exists.
+  #
+  # * +text+ - Tag name as returned by Nokogiri parser.
+  #
+  def tag_name(text)
+    self.class.html5_parser? ? text : (TAG_MAP[text] || text)
+  end
+
+  ##
+  # Returns the given text if the HTML5 parser is in use, or looks up the value in the attribute map to get
+  # the correctly-cased version, falling back to the supplied text if no mapping exists.
+  #
+  # * +text+ - Attribute name as returned by Nokogiri parser.
+  #
+  def attr_name(text)
+    self.class.html5_parser? ? text : (ATTR_MAP[text] || text)
   end
 
   class MalformedTemplateError < StandardError
