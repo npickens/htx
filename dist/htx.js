@@ -1,15 +1,16 @@
 /**
  * HTX
- * Copyright 2019-2021 Nate Pickens
+ * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.5
+ * @version 0.0.6
  */
 let HTX = function() {
-  const CHILDLESS = 0b01
-  const TEXT_NODE = 0b10
-  const FLAG_MASK = 0b11
-  const FLAG_BITS = 2
+  const CHILDLESS  = 0b001
+  const TEXT_NODE  = 0b010
+  const XMLNS_NODE = 0b100
+  const FLAG_MASK  = 0b111
+  const FLAG_BITS  = 3
 
   const UNKNOWN_PLACEHOLDER = '[HTX:unknown]'
 
@@ -28,6 +29,7 @@ let HTX = function() {
 
     constructor(template) {
       this._template = template
+      this._xmlnsStack = []
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
     }
@@ -89,9 +91,13 @@ let HTX = function() {
           node = object.render()
         } else if (flags & TEXT_NODE) {
           node = document.createTextNode(object)
-        } else if (object == 'svg' || this.svg) {
-          node = document.createElementNS('http://www.w3.org/2000/svg', object)
-          this.svg = true
+        } else if (flags & XMLNS_NODE || this._xmlnsStack.length > 0) {
+          let xmlns = (flags & XMLNS_NODE) ? args[args.indexOf('xmlns') + 1]
+                                           : this._xmlnsStack[0].namespaceURI
+
+          node = document.createElementNS(xmlns, object)
+
+          if (flags & XMLNS_NODE) this._xmlnsStack.unshift(node)
         } else {
           node = document.createElement(object)
         }
@@ -146,9 +152,11 @@ let HTX = function() {
           }
         }
 
-        this._currentNode = parentNode
+        if (this._xmlnsStack.length > 0 && currentNode == this._xmlnsStack[0]) {
+          this._xmlnsStack.shift()
+        }
 
-        if (this._currentNode.tagName == 'svg') this.svg = false
+        this._currentNode = parentNode
       }
     }
   }

@@ -1,9 +1,9 @@
 /**
  * HTXComponent
- * Copyright 2019-2021 Nate Pickens
+ * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.5
+ * @version 0.0.6
  */
 let HTXComponent = function() {
   let isMounting
@@ -45,16 +45,16 @@ let HTXComponent = function() {
 
       let placement = args.find((a) => typeof a == 'string') || 'append'
       let placementNode = args.find((a) => typeof a != 'string') || document.body
-      let node = this.render()
+      let render = this.render.bind(this)
 
-      placement == 'prepend' ? placementNode.prepend(node) :
-      placement == 'append' ? placementNode.append(node) :
-      placement == 'replace' ? placementNode.parentNode.replaceChild(node, placementNode) :
-      placement == 'before' ? placementNode.parentNode.insertBefore(node, placementNode) :
-      placement == 'after' ? placementNode.parentNode.insertBefore(node, placementNode.nextSibling) :
-      node = null
+      placement == 'prepend' ? placementNode.prepend(render()) :
+      placement == 'append' ? placementNode.append(render()) :
+      placement == 'replace' ? placementNode.parentNode.replaceChild(render(), placementNode) :
+      placement == 'before' ? placementNode.parentNode.insertBefore(render(), placementNode) :
+      placement == 'after' ? placementNode.parentNode.insertBefore(render(), placementNode.nextSibling) :
+      render = null
 
-      if (!node) throw `Unrecognized placement type: ${placement}`
+      if (!render) throw `Unrecognized placement type: ${placement}`
 
       runDidRenders()
       isMounting = false
