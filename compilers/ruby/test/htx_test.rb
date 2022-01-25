@@ -150,5 +150,31 @@ class HTXTest < Minitest::Test
         assert_equal(compiled2, HTX.compile(template2_name, template2_content))
       end
     end
+
+    test('escapes unescaped backticks in unquoted text node content and attribute values') do
+      template_name = '/backtick.htx'
+      template_content = '<div some-data="hell`o">Wor`ld!</div>'
+
+      compiled = <<~EOS
+        window['/backtick.htx'] = function(htx) {
+          htx.node('div', 'some-data', `hell\\`o`, 8); htx.node(`Wor\\`ld!`, 18); htx.close()
+        }
+      EOS
+
+      assert_equal(compiled, HTX.compile(template_name, template_content))
+    end
+
+    test('does not escape escaped backticks in unquoted text node content and attribute values') do
+      template_name = '/backtick.htx'
+      template_content = '<div some-data="hell\\`o">Wor\\`ld!</div>'
+
+      compiled = <<~EOS
+        window['/backtick.htx'] = function(htx) {
+          htx.node('div', 'some-data', `hell\\`o`, 8); htx.node(`Wor\\`ld!`, 18); htx.close()
+        }
+      EOS
+
+      assert_equal(compiled, HTX.compile(template_name, template_content))
+    end
   end
 end

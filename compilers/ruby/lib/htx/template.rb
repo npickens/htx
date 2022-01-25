@@ -35,6 +35,7 @@ module HTX
     HTML_ENTITY = /&([a-zA-Z]+|#\d+|x[0-9a-fA-F]+);/.freeze
     NON_CONTROL_STATEMENT = /#{INTERPOLATION}|(#{HTML_ENTITY})/.freeze
     CONTROL_STATEMENT = /[{}();]/.freeze
+    UNESCAPED_BACKTICK = /(?<!\\)((\\\\)*)`/.freeze
     CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
 
     ##
@@ -220,13 +221,16 @@ module HTX
         # Entire text is enclosed in ${...}.
         value.strip!
         quote = false
+        escape_quotes = false
       elsif (value = text[TEMPLATE_STRING, 1])
         # Entire text is enclosed in backticks (template string).
         quote = true
+        escape_quotes = false
       elsif is_attr || text.gsub(NON_CONTROL_STATEMENT, '') !~ CONTROL_STATEMENT
         # Text is an attribute value or doesn't match control statement pattern.
         value = text.dup
         quote = true
+        escape_quotes = true
       else
         return nil
       end
@@ -235,6 +239,7 @@ module HTX
       # calculation ignores everything before the first newline in its search for the least-indented line.
       outdent = value.scan(NON_BLANK_NON_FIRST_LINE).min
       value.gsub!(/#{LEADING_WHITESPACE}|#{TRAILING_WHITESPACE}|^#{outdent}/, '')
+      value.gsub!(UNESCAPED_BACKTICK, '\1\\\`') if escape_quotes
       value.insert(0, '`').insert(-1, '`') if quote
 
       # Ensure any Unicode characters get converted to Unicode escape sequences. Also note that since
