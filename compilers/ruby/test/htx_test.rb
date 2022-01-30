@@ -9,65 +9,11 @@ class HTXTest < Minitest::Test
 
   # NOTE: More granular tests are forthcoming.
 
+  ##########################################################################################################
+  ## General                                                                                              ##
+  ##########################################################################################################
+
   context(HTX, '::compile') do
-    test('raises an error when the template contains text at its root level') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX.compile('/template.htx', "<div>Hello</div> world!")
-      end
-    end
-
-    test('raises an error when the template does not have a root element node') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX.compile('/template.htx', "\n  <!-- Hello -->\n")
-      end
-    end
-
-    test('raises an error when the template has more than one root node') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX.compile('/template.htx', "<div></div><div></div>")
-      end
-    end
-
-    test('raises an error if a text node tag contains a child tag') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX.compile('/template.htx', "<htx-text>Hello<b>!</b></htx-text>")
-      end
-    end
-
-    test('assigns compiled template function to a custom object when assign_to is specified') do
-      template_name = '/components/for-custom-object.htx'
-      template_content = '<div></div>'
-
-      compiled = <<~EOS
-        customObject['#{template_name}'] = function(htx) {
-          htx.node('div', 9)
-        }
-      EOS
-
-      assert_equal(compiled, HTX.compile(template_name, template_content, assign_to: 'customObject'))
-    end
-
-    test('treats tags with only whitespace text as childless') do
-      template_name = '/components/whitespace-childless.htx'
-      template_content = <<~EOS
-        <div>
-          <span>
-
-          </span>
-        </div>
-      EOS
-
-      compiled = <<~EOS
-        window['#{template_name}'] = function(htx) {
-          htx.node('div', 8)
-            htx.node('span', 17)
-          htx.close()
-        }
-      EOS
-
-      assert_equal(compiled, HTX.compile(template_name, template_content))
-    end
-
     test('compiles a template') do
       template_name = '/components/people.htx'
       template_content = <<~EOS
@@ -102,6 +48,70 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX.compile(template_name, template_content))
     end
 
+    test('assigns compiled template function to a custom object when assign_to is specified') do
+      path = '/assign-to.htx'
+      result = HTX.compile(path, '<div></div>', assign_to: 'customObject')
+
+      assert_equal("customObject['#{path}'] = function(htx) {", result[0...result.index("\n")])
+    end
+
+    test('treats tags with only whitespace text as childless') do
+      template_name = '/components/whitespace-childless.htx'
+      template_content = <<~EOS
+        <div>
+          <span>
+
+          </span>
+        </div>
+      EOS
+
+      compiled = <<~EOS
+        window['#{template_name}'] = function(htx) {
+          htx.node('div', 8)
+            htx.node('span', 17)
+          htx.close()
+        }
+      EOS
+
+      assert_equal(compiled, HTX.compile(template_name, template_content))
+    end
+  end
+
+  ##########################################################################################################
+  ## Errors                                                                                               ##
+  ##########################################################################################################
+
+  context(HTX, '::compile', 'raises an error') do
+    test('when the template contains text at its root level') do
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<div>Hello</div> world!")
+      end
+    end
+
+    test('when the template does not have a root element node') do
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "\n  <!-- Hello -->\n")
+      end
+    end
+
+    test('when the template has more than one root node') do
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<div></div><div></div>")
+      end
+    end
+
+    test('if a text node tag contains a child tag') do
+      assert_raises(HTX::MalformedTemplateError) do
+        HTX.compile('/template.htx', "<htx-text>Hello<b>!</b></htx-text>")
+      end
+    end
+  end
+
+  ##########################################################################################################
+  ## XMLNS                                                                                                ##
+  ##########################################################################################################
+
+  context(HTX, '::compile') do
     test('adds appropriate xmlns attribute if none is set on <math> and <svg> tags') do
       {
         'math' => 'http://www.w3.org/1998/Math/MathML',
@@ -150,7 +160,13 @@ class HTXTest < Minitest::Test
         assert_equal(compiled2, HTX.compile(template2_name, template2_content))
       end
     end
+  end
 
+  ##########################################################################################################
+  ## Escape                                                                                               ##
+  ##########################################################################################################
+
+  context(HTX, '::compile') do
     test('escapes unescaped backticks in unquoted text node content and attribute values') do
       template_name = '/backtick.htx'
       template_content = '<div some-data="hell`o">Wor`ld!</div>'
