@@ -194,7 +194,7 @@ let HTX = function() {
           }
         }
 
-        if (this._xmlnsStack.length > 0 && currentNode == this._xmlnsStack[0]) {
+        if (this._xmlnsStack.length > 0 && parentNode == this._xmlnsStack[0]) {
           this._xmlnsStack.shift()
         }
 
