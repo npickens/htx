@@ -153,11 +153,22 @@ content is interpreted by the compiler as output to render if any of the followi
    <div>Mal is captain; Zoe is his first mate.</div>
    ```
 
-#### Node Objects
+#### Special Objects
 
-Output can be either a string (as shown in the examples above) or either of the following:
+If a tag's content is encapsulated entirely in `${...}`, the resulting value is handled as follows:
 
-1. A Node object, in which case the Node will be inserted directly.
+1. A value of **`null` or `undefined`** is treated as empty text.
+
+    ```html
+    <!-- Template -->
+    <div>${this.cook}</div>
+
+    <!-- Result when this.cook is null or undefined -->
+    <div></div>
+    ```
+
+2. A **Node object** is inserted directly into the DOM.
+
    ```html
    <!-- Template -->
    <div>${this.mechanicNode}</div>
@@ -166,9 +177,10 @@ Output can be either a string (as shown in the examples above) or either of the 
    <div><span class='crew-member'>Kaylee Frye, Mechanic</span></div>
    ```
 
-2. An object with a `render` function, in which case the `render` function is called and its return value,
-   which must be a Node object, is inserted. This is particularly useful when using the optional [HTX
-   Component](#htx-component) library.
+3. An **object with a `render` function** is replaced with the returned value from calling the `render`
+   function. This value is then handled as it would have been if it were the original object. This is
+   particularly useful when using the optional [HTX Component](#htx-component) library.
+
    ```html
    <!-- Template -->
    <div>${this.doctor}</div>
@@ -177,14 +189,24 @@ Output can be either a string (as shown in the examples above) or either of the 
    <div><span class='crew-member'>Simon Tam, Doctor</span></div>
    ```
 
-Note that the above two evaluations are only applied to the entire value of a tag's content—not to
-individual parts. Any object that is mixed with string content will be cast to a string upon insertion.
+4. **Any other object** is cast to a string and inserted as text.
+
+    ```html
+    <!-- Template -->
+    <div>${this.passengers}</div>
+
+    <!-- Result when this.passengers is an array of strings -->
+    <div>Shepherd Book,River Tam</div>
+    ```
+
+**IMPORTANT NOTE:** Special objects are only handled as such when the entire value of a tag's content is an
+interpolation. Any object that is mixed with string content will be cast to a string upon insertion.
 
 ```html
 <!-- Template -->
 <div>${this.pilot}, nickname "Wash"</div>
 
-<!-- Result when this.pilot is some object with a render function -->
+<!-- Result when this.pilot is an object with a render function -->
 <div>[object Object], nickname "Wash"</div>
 ```
 

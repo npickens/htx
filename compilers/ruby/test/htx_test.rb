@@ -32,13 +32,13 @@ class HTXTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-          htx.node('div', 'class', `people`, 8)
-            htx.node('h1', 16); htx.node(this.title, 26); htx.close()
+          htx.node('div', 'class', `people`, 9)
+            htx.node('h1', 17); htx.node(this.title, 24); htx.close()
 
-            htx.node('ul', 'class', `people-list`, 32)
+            htx.node('ul', 'class', `people-list`, 33)
               for (let person of this.people) {
-                htx.node('li', 'class', `person ${person.role}`, 40)
-                  htx.node(person.name, 50)
+                htx.node('li', 'class', `person ${person.role}`, 41)
+                  htx.node(person.name, 48)
                 htx.close()
               }
           htx.close(2)
@@ -67,8 +67,8 @@ class HTXTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-          htx.node('div', 8)
-            htx.node('span', 17)
+          htx.node('div', 9)
+            htx.node('span', 19)
           htx.close()
         }
       EOS
@@ -121,7 +121,7 @@ class HTXTest < Minitest::Test
         template1_content = "<#{tag}></#{tag}>"
         compiled1 = <<~EOS
           window['#{template1_name}'] = function(htx) {
-            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 13)
+            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 15)
           }
         EOS
 
@@ -129,7 +129,7 @@ class HTXTest < Minitest::Test
         template2_content = "<#{tag} class='hello'></#{tag}>"
         compiled2 = <<~EOS
           window['#{template2_name}'] = function(htx) {
-            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 'class', `hello`, 13)
+            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 'class', `hello`, 15)
           }
         EOS
 
@@ -144,7 +144,7 @@ class HTXTest < Minitest::Test
         template1_content = "<#{tag} xmlns='custom-xmlns'></#{tag}>"
         compiled1 = <<~EOS
           window['#{template1_name}'] = function(htx) {
-            htx.node('#{tag}', 'xmlns', `custom-xmlns`, 13)
+            htx.node('#{tag}', 'xmlns', `custom-xmlns`, 15)
           }
         EOS
 
@@ -152,7 +152,7 @@ class HTXTest < Minitest::Test
         template2_content = "<#{tag} class='hello' xmlns='custom-xmlns'></#{tag}>"
         compiled2 = <<~EOS
           window['#{template2_name}'] = function(htx) {
-            htx.node('#{tag}', 'class', `hello`, 'xmlns', `custom-xmlns`, 13)
+            htx.node('#{tag}', 'class', `hello`, 'xmlns', `custom-xmlns`, 15)
           }
         EOS
 
@@ -173,7 +173,7 @@ class HTXTest < Minitest::Test
 
       compiled = <<~EOS
         window['/backtick.htx'] = function(htx) {
-          htx.node('div', 'some-data', `hell\\`o`, 8); htx.node(`Wor\\`ld!`, 18); htx.close()
+          htx.node('div', 'some-data', `hell\\`o`, 9); htx.node(`Wor\\`ld!`, 16); htx.close()
         }
       EOS
 
@@ -186,7 +186,7 @@ class HTXTest < Minitest::Test
 
       compiled = <<~EOS
         window['/backtick.htx'] = function(htx) {
-          htx.node('div', 'some-data', `hell\\`o`, 8); htx.node(`Wor\\`ld!`, 18); htx.close()
+          htx.node('div', 'some-data', `hell\\`o`, 9); htx.node(`Wor\\`ld!`, 16); htx.close()
         }
       EOS
 

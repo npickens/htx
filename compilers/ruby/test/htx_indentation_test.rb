@@ -19,9 +19,9 @@ class HTXIndentationTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-        \thtx.node('div', 8)
-        \t\thtx.node(`Hello`, 18)
-        \t\thtx.node('b', 24); htx.node(`World!`, 34)
+        \thtx.node('div', 9)
+        \t\thtx.node(`Hello`, 16)
+        \t\thtx.node('b', 25); htx.node(`World!`, 32)
         \thtx.close(2)
         }
       EOS
@@ -35,7 +35,7 @@ class HTXIndentationTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-          htx.node('div', 8); htx.node(`Hello`, 18); htx.close()
+          htx.node('div', 9); htx.node(`Hello`, 16); htx.close()
         }
       EOS
 
@@ -53,9 +53,9 @@ class HTXIndentationTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-           htx.node('div', 8)
-              htx.node(`Hello`, 18)
-               htx.node('b', 24); htx.node(`World!`, 34)
+           htx.node('div', 9)
+              htx.node(`Hello`, 16)
+               htx.node('b', 25); htx.node(`World!`, 32)
            htx.close(2)
         }
       EOS
@@ -74,9 +74,9 @@ class HTXIndentationTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-             htx.node('div', 8)
-               htx.node(`Hello`, 18)
-               htx.node('b', 24); htx.node(`World!`, 34)
+             htx.node('div', 9)
+               htx.node(`Hello`, 16)
+               htx.node('b', 25); htx.node(`World!`, 32)
              htx.close(2)
         }
       EOS
@@ -95,9 +95,9 @@ class HTXIndentationTest < Minitest::Test
 
       compiled = <<~EOS
         window['#{template_name}'] = function(htx) {
-        \thtx.node('div', 8)
-        \t  htx.node(`Hello`, 18)
-        \t  htx.node('b', 24); htx.node(`World!`, 34)
+        \thtx.node('div', 9)
+        \t  htx.node(`Hello`, 16)
+        \t  htx.node('b', 25); htx.node(`World!`, 32)
         \thtx.close(2)
         }
       EOS

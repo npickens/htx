@@ -5,13 +5,11 @@
  * @license MIT
  */
 let HTX = function() {
-  const CHILDLESS  = 0b001
-  const TEXT_NODE  = 0b010
-  const XMLNS_NODE = 0b100
-  const FLAG_MASK  = 0b111
-  const FLAG_BITS  = 3
-
-  const UNKNOWN_PLACEHOLDER = '[HTX:unknown]'
+  const ELEMENT   = 0b001 // An HTML tag (as opposed to dynamic content).
+  const CHILDLESS = 0b010 // Node does not have any children.
+  const XMLNS     = 0b100 // Node has an XML namespace attribute.
+  const FLAG_MASK = 0b111
+  const FLAG_BITS = 3
 
   let instances = new WeakMap
 
@@ -48,14 +46,13 @@ let HTX = function() {
     /**
      * Appends or updates a node.
      *
-     * @param object A tag name (e.g. 'div'), plain text, Node object, or an object with a `render` function
-     *   that returns a Node object.
+     * @param object A tag name (e.g. 'div'), Node object, object with a `render` function whose return
+     *   value should be used, or any other object which will be cast to a string and inserted as text.
      * @param args First N (optional) are node attributes in the form key1, value1, key2, value2, ....
      *   Second-to-last (optional) is the node's dynamic key (user-provided key for loop-based content to
      *   optimize update performance). Last (required) is the node's static key (compiler-generated index
      *   for this specific node within the tree of all potential DOM nodes) bitwise left shifted and ORed
-     *   with any flags: CHILDLESS = this node does not have any children; TEXT_NODE = the first argument is
-     *   text to be rendered (as opposed to the name of a tag).
+     *   with any flags.
      */
     node(object, ...args) {
       let node
@@ -98,41 +95,40 @@ let HTX = function() {
         currentNode.previousSibling.remove()
       }
 
-      // If current node is an exact match, use it.
-      if (
+      let exists =
         this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) == dynamicKey && !(
-          currentNode instanceof Comment &&
-          currentNode.nodeValue == UNKNOWN_PLACEHOLDER &&
-          object !== null &&
-          object !== undefined
-        )
-      ) {
-        node = currentNode
+        this._dynamicKeys.get(currentNode) == dynamicKey
 
-        if (node instanceof Text && node.nodeValue !== object) {
-          node.nodeValue = object
-        }
-      } else {
-        if (object === null || object === undefined) {
-          node = document.createComment(UNKNOWN_PLACEHOLDER)
-        } else if (object instanceof Node) {
-          node = object
-        } else if (object && object.render instanceof Function) {
-          node = object.render()
-        } else if (flags & TEXT_NODE) {
-          node = document.createTextNode(object)
-        } else if (flags & XMLNS_NODE || this._xmlnsStack.length > 0) {
-          let xmlns = (flags & XMLNS_NODE) ? args[args.indexOf('xmlns') + 1]
-                                           : this._xmlnsStack[0].namespaceURI
-
-          node = document.createElementNS(xmlns, object)
-
-          if (flags & XMLNS_NODE) this._xmlnsStack.unshift(node)
+      if (flags & ELEMENT) {
+        if (exists) {
+          node = currentNode
+        } else if (flags & XMLNS || this._xmlnsStack.length > 0) {
+          node = document.createElementNS(
+            (flags & XMLNS) ? args[args.indexOf('xmlns') + 1] : this._xmlnsStack[0].namespaceURI,
+            object
+          )
         } else {
           node = document.createElement(object)
         }
 
+        if (flags & XMLNS) this._xmlnsStack.unshift(node)
+      } else {
+        if (object && object.render instanceof Function) object = object.render()
+        if (object === null || object === undefined) object = ''
+
+        if (object instanceof Node) {
+          node = object
+        } else if (exists && currentNode.nodeType == 3) {
+          node = currentNode
+
+          let text = object.toString()
+          if (node.nodeValue != text) node.nodeValue = text
+        } else {
+          node = document.createTextNode(object)
+        }
+      }
+
+      if (node != currentNode) {
         this._staticKeys.delete(currentNode)
         this._dynamicKeys.delete(currentNode)
 
@@ -168,7 +164,7 @@ let HTX = function() {
 
       this._currentNode = node
 
-      if (!(flags & (CHILDLESS | TEXT_NODE))) this._parentNode = node
+      if ((flags & ELEMENT) && !(flags & CHILDLESS)) this._parentNode = node
     }
 
     /**

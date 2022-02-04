@@ -4,10 +4,10 @@ require('nokogiri')
 
 module HTX
   class Template
-    CHILDLESS  = 0b001
-    TEXT_NODE  = 0b010
-    XMLNS_NODE = 0b100
-    FLAG_BITS  = 3
+    ELEMENT   = 0b001
+    CHILDLESS = 0b010
+    XMLNS     = 0b100
+    FLAG_BITS = 3
 
     INDENT_DEFAULT = '  '
     TEXT_NODE_TAG = 'htx-text'
@@ -142,7 +142,7 @@ module HTX
               "htx.node(#{[
                 value,
                 dynamic_key,
-                ((@static_key += 1) << FLAG_BITS) | TEXT_NODE,
+                (@static_key += 1) << FLAG_BITS,
               ].compact.join(', ')})"\
               "#{indent(text[TRAILING_WHITESPACE])}"
             )
@@ -157,7 +157,7 @@ module HTX
             "'#{tag_name(node.name)}'",
             attrs,
             dynamic_key,
-            ((@static_key += 1) << FLAG_BITS) | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS_NODE : 0),
+            ((@static_key += 1) << FLAG_BITS) | ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
           ].compact.flatten.join(', ')})")
 
           unless childless
