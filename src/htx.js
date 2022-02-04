@@ -141,14 +141,21 @@ let HTX = function() {
       }
 
       // Add/update the node's attributes.
-      for (let k = 0, v = 1; v < args.length - 1; k += 2, v += 2) {
-        if (node.tagName == 'SELECT' && args[k] == 'value') {
-          node[args[k]] = args[v]
-        } else if (args[v] === false || args[v] === null || args[v] === undefined) {
-          node.removeAttribute(args[k])
-        } else {
-          node.setAttribute(args[k], args[v] === true ? '' : args[v])
+      for (let i = 0; i < args.length - 2; i += 2) {
+        let k = args[i]
+        let v = args[i + 1]
+        let falsey = v === false || v === null || v === undefined
+
+        if (node.tagName == 'OPTION' && k == 'selected' && !falsey) {
+          let selectNode = node.parentNode
+          while (selectNode && selectNode.tagName != 'SELECT') {
+            selectNode = selectNode.parentNode
+          }
+
+          if (selectNode) selectNode.value = args[args.indexOf('value') + 1]
         }
+
+        falsey ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
       }
 
       if (!parentNode) {
