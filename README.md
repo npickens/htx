@@ -214,7 +214,8 @@ interpolation. Any object that is mixed with string content will be cast to a st
 
 Content can be rendered without an enclosing tag by wrapping it in HTX's special tag,
 `<htx-content>...</htx-content>`. This is useful within a control loop or conditional when output is desired
-without the creation of an additional HTML element. (Note: this tag may not contain any child tags.)
+without the creation of an additional HTML element. (Note: this tag may not contain any child tags and the
+only attribute allowed is `htx-key`.)
 
 ```html
 <!-- Template -->

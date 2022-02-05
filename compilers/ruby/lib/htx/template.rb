@@ -129,6 +129,11 @@ module HTX
               "<#{CONTENT_TAG}> for identical functionality.")
           end
 
+          if (node.attributes.size - (dynamic_key ? 1 : 0)) != 0
+            raise(MalformedTemplateError.new("<#{node.name}> tags may not have attributes other than "\
+              "#{DYNAMIC_KEY_ATTR}", @name, node))
+          end
+
           if (non_text_node = node.children.find { |n| !n.text? })
             raise(MalformedTemplateError.new("<#{node.name}> tags may not contain child tags", @name,
               non_text_node))
