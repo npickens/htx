@@ -10,7 +10,7 @@ module HTX
     FLAG_BITS = 3
 
     INDENT_DEFAULT = '  '
-    TEXT_NODE_TAG = 'htx-text'
+    CONTENT_TAG = 'htx-content'
     DYNAMIC_KEY_ATTR = 'htx-key'
 
     DEFAULT_XMLNS = {
@@ -123,14 +123,14 @@ module HTX
 
         dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr)
 
-        if node.text? || node.name == TEXT_NODE_TAG || node.name == ':'
-          if node.name == ':'
-            warn("#{@name}:#{node.line}: The <:> tag has been deprecated. Please use <#{TEXT_NODE_TAG}> "\
-              'for identical functionality.')
+        if node.text? || node.name == CONTENT_TAG || node.name == 'htx-text' || node.name == ':'
+          if !node.text? && node.name != CONTENT_TAG
+            warn("#{@name}:#{node.line}: The <#{node.name}> tag has been deprecated. Please use "\
+              "<#{CONTENT_TAG}> for identical functionality.")
           end
 
           if (non_text_node = node.children.find { |n| !n.text? })
-            raise(MalformedTemplateError.new('text node tags may not contain child tags', @name,
+            raise(MalformedTemplateError.new("<#{node.name}> tags may not contain child tags", @name,
               non_text_node))
           end
 
