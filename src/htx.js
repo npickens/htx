@@ -129,9 +129,6 @@ let HTX = function() {
       }
 
       if (node != currentNode) {
-        this._staticKeys.delete(currentNode)
-        this._dynamicKeys.delete(currentNode)
-
         this._staticKeys.set(node, staticKey)
         this._dynamicKeys.set(node, dynamicKey)
       }
