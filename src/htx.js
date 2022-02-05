@@ -41,6 +41,7 @@ let HTX = function() {
       this._xmlnsStack = []
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
+      this._dynamicIndex = {}
     }
 
     /**
@@ -62,17 +63,16 @@ let HTX = function() {
       let l = args.length
       let flags = args[l - 1] & FLAG_MASK
       let staticKey = args[l - 1] >> FLAG_BITS
-      let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
+      let dynamicKey = l % 2 == 0 && args[l - 2]
+      let fullKey = `${staticKey}:${dynamicKey}`
 
-      // Walk, unless we're working on the root node.
-      if (staticKey != 1) {
-        // If the current node is also the current parent node, descend into it.
-        if (parentNode && currentNode == parentNode) {
-          currentNode = parentNode.firstChild
-        // Otherwise go to the next sibling of the current node.
-        } else {
-          currentNode = currentNode.nextSibling
-        }
+      if (staticKey == 1) {
+        this._prevDynamicIndex = this._dynamicIndex
+        this._dynamicIndex = {}
+      } else if (currentNode == parentNode) {
+        currentNode = parentNode.firstChild
+      } else {
+        currentNode = currentNode.nextSibling
       }
 
       // Remove current node and advance to its next sibling until static key matches or is past that of the
@@ -83,21 +83,19 @@ let HTX = function() {
         tmpNode.remove()
       }
 
-      // If next sibling is an exact match, an item was likely removed from loop-generated content, so
-      // remove the current node and move to its next sibling.
-      if (
-        this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) != dynamicKey &&
-        this._staticKeys.get(currentNode.nextSibling) == staticKey &&
-        this._dynamicKeys.get(currentNode.nextSibling) == dynamicKey
-      ) {
-        currentNode = currentNode.nextSibling
-        currentNode.previousSibling.remove()
-      }
+      let staticKeyMatch = this._staticKeys.get(currentNode) == staticKey
+      let exists = staticKeyMatch && this._dynamicKeys.get(currentNode) == dynamicKey
 
-      let exists =
-        this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) == dynamicKey
+      // If there's a dynamic key but the current node isn't a match, find any potential existing node and
+      // move it to the current position.
+      if (dynamicKey && staticKeyMatch && !exists) {
+        let existingNode = this._prevDynamicIndex[fullKey]
+
+        if (existingNode) {
+          currentNode.parentNode.insertBefore(existingNode, currentNode)
+          exists = !!(currentNode = existingNode)
+        }
+      }
 
       if (flags & ELEMENT) {
         if (exists) {
@@ -132,6 +130,8 @@ let HTX = function() {
         this._staticKeys.set(node, staticKey)
         this._dynamicKeys.set(node, dynamicKey)
       }
+
+      if (dynamicKey) this._dynamicIndex[fullKey] = node
 
       // Add/update the node's attributes.
       for (let i = 0; i < args.length - 2; i += 2) {
