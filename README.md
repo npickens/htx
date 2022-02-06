@@ -375,45 +375,61 @@ the tree is walked.
 
 ## HTX Component
 
-The HTX Component JavaScript library is small and optional part of HTX. It provides a simple `HTXComponent`
-class designed to be extended by various component classes.
+The HTX Component JavaScript library is a small and optional part of HTX. It provides a simple
+`HTXComponent` class designed to be extended by various component classes. The constructor takes the name of
+the HTX template function to be used by the component.
 
 ```javascript
 class People extends HTXComponent {
-  constructor(peopleList) {
+  constructor() {
     super('/components/people.htx')
 
-    this.peopleList = peopleList
+    this.list = [
+      {role: 'captain', name: 'Mal'},
+      {role: 'first-mate', name: 'Zoe'},
+      {role: 'mercenary', name: 'Jayne'},
+    ]
   }
 
   // ...
 }
 ```
 
-The constructor takes the name of the template function for the component. The class provides `mount` and
-`render` functions to be used for insertion into the DOM and refreshing when changes occur, respectively.
-(Note: `mount` renders and inserts into the DOM and should be called once for the initial rendering of the
-component; `render` should be called on a mounted component whenever it needs to be refreshed.)
+The class provides a `node` property, which is the root node of the HTX template rendering, and two
+functions:
+
+* `mount` — Renders and inserts into the DOM. Should be called once for the initial rendering of the
+  component. Accepts two optional arguments: the placement type (`prepend`, `append`, `replace`, `before`,
+  or `after`; default is `append`) and an existing DOM node the placement is in relation to (default is
+  `document.body`).
+* `render` — Renders the component. Should be called on a mounted component whenever it needs to be
+  refreshed.
+
+```javascript
+// Initial rendering and insertion into the DOM.
+let people = new People()
+people.mount('prepend', document.querySelector('#container'))
+
+// The component's render function must be called to refresh the DOM.
+people.list.push({role: 'pilot', name: 'Hoban Washburne'})
+people.render()
+```
 
 An optional `didRender` function can be implemented by the child component class, which will be called
-whenever a render occurs. It is passed one argument that is `true` on the initial render and `false`
+whenever a render occurs. It is passed one argument that is `true` on the initial rendering and `false`
 thereafter.
 
 ```javascript
-let crew = {
-  title: 'Serenity Crew',
-  people: [
-    {role: 'captain', name: 'Mal'},
-    {role: 'first-mate', name: 'Zoe'},
-    {role: 'mercenary', name: 'Jayne'},
-  ],
+class People extends HTXComponent {
+  // ...
+
+  didRender(initial) {
+    if (!initial) return
+
+    let button = this.node.querySelector('.button')
+    button.addEventListener('click', (event) => { /* ... */ })
+  }
 }
-
-let people = new People(crew.people)
-people.mount(document.body, 'prepend') // Initial rendering and insertion into the DOM
-
-crew.people.push({role: 'pilot', name: 'Hoban Washburne'})
-people.render() // The component's `render` function must be called to refresh the DOM.
 ```
 
 ## Performance
