@@ -138,13 +138,10 @@ let HTX = function() {
         let v = args[i + 1]
         let falsey = v === false || v === null || v === undefined
 
-        if (node.tagName == 'OPTION' && k == 'selected' && !falsey) {
-          let selectNode = node.parentNode
-          while (selectNode && selectNode.tagName != 'SELECT') {
-            selectNode = selectNode.parentNode
-          }
-
-          if (selectNode) selectNode.value = args[args.indexOf('value') + 1]
+        // Needed in Safari to refresh the state of the parent <select> tag (setAttribute alone doesn't
+        // trigger it).
+        if (node.tagName == 'OPTION' && k == 'selected') {
+          node[k] = v
         }
 
         falsey ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
