@@ -67,8 +67,7 @@ let HTX = function() {
       let fullKey = `${staticKey}:${dynamicKey}`
 
       if (staticKey == 1) {
-        this._prevDynamicIndex = this._dynamicIndex
-        this._dynamicIndex = {}
+        this._dynamicIndexTmp = {}
       } else if (currentNode == parentNode) {
         currentNode = parentNode.firstChild
       } else {
@@ -89,7 +88,7 @@ let HTX = function() {
       // If there's a dynamic key but the current node isn't a match, find any potential existing node and
       // move it to the current position.
       if (dynamicKey && staticKeyMatch && !exists) {
-        let existingNode = this._prevDynamicIndex[fullKey]
+        let existingNode = this._dynamicIndex[fullKey]
 
         if (existingNode) {
           currentNode.parentNode.insertBefore(existingNode, currentNode)
@@ -131,7 +130,7 @@ let HTX = function() {
         this._dynamicKeys.set(node, dynamicKey)
       }
 
-      if (dynamicKey) this._dynamicIndex[fullKey] = node
+      if (dynamicKey) this._dynamicIndexTmp[fullKey] = node
 
       // Add/update the node's attributes.
       for (let i = 0; i < args.length - 2; i += 2) {
@@ -196,6 +195,11 @@ let HTX = function() {
         }
 
         this._currentNode = parentNode
+      }
+
+      if (this._staticKeys.get(this._currentNode) == 1) {
+        this._dynamicIndex = this._dynamicIndexTmp
+        delete this._dynamicIndexTmp
       }
     }
   }
