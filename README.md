@@ -441,6 +441,9 @@ very performant and has almost no memory overhead.
 Performance has been measured with an adaptation of the DBMonster web app. The average of 10 runs each
 running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows:
 
+(**NOTE**: Performance has not been reassessed since a very early version of the HTX library. Stats may
+differ now.)
+
 | Metric                | JSX   | HTX   | HTX Improvement |
 |-----------------------|-------|-------|-----------------|
 | numAnimationFrames    | 179.4 | 225.5 | 26% faster      |
