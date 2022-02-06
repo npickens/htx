@@ -13,12 +13,12 @@ let HTXComponent = function() {
    * Calls each `didRender` callback in the `didRenders` queue.
    */
   function runDidRenders() {
-    for (let [component, initial] of didRenders) {
+    renderRoot = null
+
+    while (didRenders.length) {
+      let [component, initial] = didRenders.shift()
       component.didRender(initial)
     }
-
-    renderRoot = null
-    didRenders = []
   }
 
   return class {
@@ -78,8 +78,8 @@ let HTXComponent = function() {
 
       if (!render) throw `Unrecognized placement type: ${placement}`
 
-      runDidRenders()
       isMounting = false
+      runDidRenders()
     }
   }
 }()
