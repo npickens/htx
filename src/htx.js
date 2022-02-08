@@ -1,8 +1,7 @@
 /**
- * HTX
- * Copyright 2019-2022 Nate Pickens
- *
- * @license MIT
+ * HTX renders compiled HTX templates. `HTX.render` is the only function that should ever be called
+ * directly, first by passing the name of a template function and subsequently (for DOM updates) by passing
+ * the returned Node object from the original call.
  */
 let HTX = function() {
   const ELEMENT   = 0b001 // An HTML tag (as opposed to dynamic content).

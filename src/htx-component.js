@@ -1,8 +1,6 @@
 /**
- * HTXComponent
- * Copyright 2019-2022 Nate Pickens
- *
- * @license MIT
+ * HTXComponent is a wrapper for the main HTX library, designed to be extended by a child class and used to
+ * manage a section of the DOM more cleanly than with the HTX library alone.
  */
 let HTXComponent = function() {
   let isMounting
