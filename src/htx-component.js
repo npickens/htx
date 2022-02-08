@@ -65,16 +65,13 @@ let HTXComponent = function() {
 
       let placement = args.find((a) => typeof a == 'string') || 'append'
       let placementNode = args.find((a) => typeof a != 'string') || document.body
-      let render = this.render.bind(this)
 
-      placement == 'prepend' ? placementNode.prepend(render()) :
-      placement == 'append' ? placementNode.append(render()) :
-      placement == 'replace' ? placementNode.parentNode.replaceChild(render(), placementNode) :
-      placement == 'before' ? placementNode.parentNode.insertBefore(render(), placementNode) :
-      placement == 'after' ? placementNode.parentNode.insertBefore(render(), placementNode.nextSibling) :
-      render = null
-
-      if (!render) throw `Unrecognized placement type: ${placement}`
+      if (placement == 'append' || placement == 'prepend' || placement == 'before' ||
+        placement == 'after' || placement == 'replace') {
+        placementNode[placement.replace('replace', 'replaceWith')](this.render())
+      } else {
+        throw `Unrecognized placement type: ${placement}`
+      }
 
       isMounting = false
       runDidRenders()
