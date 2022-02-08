@@ -25,12 +25,14 @@ SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze
 VERSION_FILE = File.join(BASE_DIR, 'VERSION').freeze
 SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
+ALL_FILE = File.join(DIST_DIR, 'htx-all.js').freeze
 
 RUBY_TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 RUBY_GEMSPEC_FILE = File.join(RUBY_DIR, 'htx.gemspec').freeze
 RUBY_VERSION_FILE = File.join(RUBY_DIR, 'VERSION').freeze
 RUBY_FILE_WITH_VERSION = File.join(RUBY_DIR, 'lib', 'htx', 'version.rb').freeze
 
+COPYRIGHT = File.readlines(File.join(BASE_DIR, 'LICENSE')).first.strip
 OLD_VERSION = File.read(VERSION_FILE).strip.freeze
 major, minor, patch = OLD_VERSION.split('.').map(&:to_i)
 NEW_VERSION =
@@ -123,59 +125,58 @@ end
 
 def build_javascript
   FileUtils.mkdir_p(DIST_DIR)
-  all = []
 
-  Dir.glob(File.join(SRC_DIR, '*.js')).sort_by(&:size).each do |src_file|
-    dist_file = src_file.sub(SRC_DIR, DIST_DIR)
-    dist_file_min = dist_file.sub(/\.js$/, '.min.js')
-
-    original = File.read(src_file)
-    minified, status = command(
-      "terser #{src_file} -c --comments /^$/ --mangle-props regex=/^_.*/", capture_output: true
-    )
-
-    if status != 0
-      puts(minified)
-      finish_task(status, '', 'Build aborted')
-    end
-
-    name = original[/^\/\*\*\n \* ([^\n]+)/m, 1]
-    comment = javascript_comment(name)
-
-    original.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
-    original.gsub!(/^ *\/\/.*\n/, '')
-
-    File.write(dist_file, original.prepend(comment))
-    File.write(dist_file_min, minified.prepend(comment))
-
-    all << [name, src_file, original]
-  end
-
-  cmd = "terser #{all.map { |f| f[1] }.join(' ')} -c --comments /^$/ --mangle-props regex=/^_.*/"
-  minified, status = command(cmd, capture_output: true)
-
-  if status != 0
-    puts(minified)
-    finish_task(status, '', 'Build aborted')
-  end
-
-  File.write(File.join(DIST_DIR, 'htx-all.js'), all.map(&:last).join("\n"))
-  File.write(File.join(DIST_DIR, 'htx-all.min.js'), javascript_comment(all.map(&:first).join(', ')) +
-    minified)
+  src_files = Dir.glob(File.join(SRC_DIR, '*.js')).sort_by(&:size)
+  src_files.each { |src_file| build_javascript_file(src_file) }
+  build_javascript_file(*src_files)
 
   finish_task(0, 'JavaScript files built')
 end
 
-def javascript_comment(name)
-  <<~eos
-    /**
-     * #{name}
-     * Copyright 2019-2022 Nate Pickens
-     *
-     * @license MIT
-     * @version #{NEW_VERSION}
-     */
-  eos
+def build_javascript_file(*src_files)
+  all = src_files.size > 1
+  dist_file = all ? ALL_FILE : src_files.first.sub(SRC_DIR, DIST_DIR)
+  dist_file_min = dist_file.sub(/\.js$/, '.min.js')
+
+  lib_names = []
+  unminified = []
+
+  src_files.each do |src_file|
+    content = File.read(src_file)
+    lib_name = content[/^(let|class) (\w+)/, 2]
+
+    content.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
+    content.gsub!(/^ *\/\/.*\n/, '')
+    content.prepend(javascript_comment(lib_name))
+
+    lib_names << lib_name
+    unminified << content
+  end
+
+  lib_names = lib_names.join(', ')
+  unminified = unminified.join("\n")
+
+  File.write(dist_file, unminified)
+  status = command("terser #{src_files.join(' ')} -c --comments /^$/ --mangle-props regex=/^_.*/ "\
+    "--format \"preamble='#{javascript_comment(lib_names, :minified)}'\" --output #{dist_file_min}")
+
+  finish_task(status, '', 'Build aborted') if status != 0
+end
+
+def javascript_comment(lib_name, minified = false)
+  if minified
+    "/* #{lib_name} v#{NEW_VERSION} :: #{COPYRIGHT} :: MIT License */"
+  else
+    <<~EOS
+      /**
+       * #{lib_name}
+       * #{COPYRIGHT}
+       *
+       * @license MIT
+       * @version #{NEW_VERSION}
+       */
+    EOS
+  end
 end
 
 ############################################################################################################
