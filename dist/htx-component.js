@@ -3,7 +3,7 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.6
+ * @version 0.0.7
  */
 let HTXComponent = function() {
   let isMounting
@@ -11,12 +11,12 @@ let HTXComponent = function() {
   let didRenders = []
 
   function runDidRenders() {
-    for (let [component, initial] of didRenders) {
+    renderRoot = null
+
+    while (didRenders.length) {
+      let [component, initial] = didRenders.shift()
       component.didRender(initial)
     }
-
-    renderRoot = null
-    didRenders = []
   }
 
   return class {
@@ -45,19 +45,16 @@ let HTXComponent = function() {
 
       let placement = args.find((a) => typeof a == 'string') || 'append'
       let placementNode = args.find((a) => typeof a != 'string') || document.body
-      let render = this.render.bind(this)
 
-      placement == 'prepend' ? placementNode.prepend(render()) :
-      placement == 'append' ? placementNode.append(render()) :
-      placement == 'replace' ? placementNode.parentNode.replaceChild(render(), placementNode) :
-      placement == 'before' ? placementNode.parentNode.insertBefore(render(), placementNode) :
-      placement == 'after' ? placementNode.parentNode.insertBefore(render(), placementNode.nextSibling) :
-      render = null
+      if (placement == 'append' || placement == 'prepend' || placement == 'before' ||
+        placement == 'after' || placement == 'replace') {
+        placementNode[placement.replace('replace', 'replaceWith')](this.render())
+      } else {
+        throw `Unrecognized placement type: ${placement}`
+      }
 
-      if (!render) throw `Unrecognized placement type: ${placement}`
-
-      runDidRenders()
       isMounting = false
+      runDidRenders()
     }
   }
 }()

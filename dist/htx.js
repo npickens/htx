@@ -3,16 +3,14 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.6
+ * @version 0.0.7
  */
 let HTX = function() {
-  const CHILDLESS  = 0b001
-  const TEXT_NODE  = 0b010
-  const XMLNS_NODE = 0b100
-  const FLAG_MASK  = 0b111
-  const FLAG_BITS  = 3
-
-  const UNKNOWN_PLACEHOLDER = '[HTX:unknown]'
+  const ELEMENT   = 0b001
+  const CHILDLESS = 0b010
+  const XMLNS     = 0b100
+  const FLAG_MASK = 0b111
+  const FLAG_BITS = 3
 
   let instances = new WeakMap
 
@@ -29,9 +27,9 @@ let HTX = function() {
 
     constructor(template) {
       this._template = template
-      this._xmlnsStack = []
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
+      this._dynamicIndex = {}
     }
 
     node(object, ...args) {
@@ -42,14 +40,15 @@ let HTX = function() {
       let l = args.length
       let flags = args[l - 1] & FLAG_MASK
       let staticKey = args[l - 1] >> FLAG_BITS
-      let dynamicKey = l % 2 == 0 ? args[l - 2] : undefined
+      let dynamicKey = l % 2 == 0 && args[l - 2]
+      let fullKey = `${staticKey}:${dynamicKey}`
 
-      if (staticKey != 1) {
-        if (parentNode && currentNode == parentNode) {
-          currentNode = parentNode.firstChild
-        } else {
-          currentNode = currentNode.nextSibling
-        }
+      if (staticKey == 1) {
+        this._dynamicIndexTmp = {}
+      } else if (currentNode == parentNode) {
+        currentNode = parentNode.firstChild
+      } else {
+        currentNode = currentNode.nextSibling
       }
 
       while (currentNode && this._staticKeys.get(currentNode) < staticKey) {
@@ -58,68 +57,60 @@ let HTX = function() {
         tmpNode.remove()
       }
 
-      if (
-        this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) != dynamicKey &&
-        this._staticKeys.get(currentNode.nextSibling) == staticKey &&
-        this._dynamicKeys.get(currentNode.nextSibling) == dynamicKey
-      ) {
-        currentNode = currentNode.nextSibling
-        currentNode.previousSibling.remove()
+      let staticKeyMatch = this._staticKeys.get(currentNode) == staticKey
+      let exists = staticKeyMatch && this._dynamicKeys.get(currentNode) == dynamicKey
+
+      if (dynamicKey && staticKeyMatch && !exists) {
+        let existingNode = this._dynamicIndex[fullKey]
+
+        if (existingNode) {
+          currentNode.parentNode.insertBefore(existingNode, currentNode)
+          exists = !!(currentNode = existingNode)
+        }
       }
 
-      if (
-        this._staticKeys.get(currentNode) == staticKey &&
-        this._dynamicKeys.get(currentNode) == dynamicKey && !(
-          currentNode instanceof Comment &&
-          currentNode.nodeValue == UNKNOWN_PLACEHOLDER &&
-          object !== null &&
-          object !== undefined
-        )
-      ) {
-        node = currentNode
-
-        if (node instanceof Text && node.nodeValue !== object) {
-          node.nodeValue = object
-        }
-      } else {
-        if (object === null || object === undefined) {
-          node = document.createComment(UNKNOWN_PLACEHOLDER)
-        } else if (object instanceof Node) {
-          node = object
-        } else if (object && object.render instanceof Function) {
-          node = object.render()
-        } else if (flags & TEXT_NODE) {
-          node = document.createTextNode(object)
-        } else if (flags & XMLNS_NODE || this._xmlnsStack.length > 0) {
-          let xmlns = (flags & XMLNS_NODE) ? args[args.indexOf('xmlns') + 1]
-                                           : this._xmlnsStack[0].namespaceURI
-
-          node = document.createElementNS(xmlns, object)
-
-          if (flags & XMLNS_NODE) this._xmlnsStack.unshift(node)
+      if (flags & ELEMENT) {
+        if (exists) {
+          node = currentNode
+        } else if (flags & XMLNS) {
+          node = document.createElementNS(args[args.indexOf('xmlns') + 1 || -1] || parentNode.namespaceURI,
+            object)
         } else {
           node = document.createElement(object)
         }
+      } else {
+        if (object && object.render instanceof Function) object = object.render()
+        if (object === null || object === undefined) object = ''
 
-        this._staticKeys.delete(currentNode)
-        this._dynamicKeys.delete(currentNode)
+        if (object instanceof Node) {
+          node = object
+        } else if (exists && currentNode.nodeType == 3) {
+          node = currentNode
 
+          let text = object.toString()
+          if (node.nodeValue != text) node.nodeValue = text
+        } else {
+          node = document.createTextNode(object)
+        }
+      }
+
+      if (node != currentNode) {
         this._staticKeys.set(node, staticKey)
         this._dynamicKeys.set(node, dynamicKey)
       }
 
-      for (let k = 0, v = 1; v < args.length - 1; k += 2, v += 2) {
-        if (
-          (node.tagName == 'INPUT' || node.tagName == 'SELECT') &&
-          (args[k] == 'value' || args[k] == 'checked')
-        ) {
-          node[args[k]] = args[v]
-        } else if (args[v] === false || args[v] === null || args[v] === undefined) {
-          node.removeAttribute(args[k])
-        } else {
-          node.setAttribute(args[k], args[v] === true ? '' : args[v])
+      if (dynamicKey) this._dynamicIndexTmp[fullKey] = node
+
+      for (let i = 0; i < args.length - 2; i += 2) {
+        let k = args[i]
+        let v = args[i + 1]
+        let falsey = v === false || v === null || v === undefined
+
+        if (node.tagName == 'OPTION' && k == 'selected') {
+          node[k] = v
         }
+
+        falsey ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
       }
 
       if (!parentNode) {
@@ -132,7 +123,7 @@ let HTX = function() {
 
       this._currentNode = node
 
-      if (!(flags & (CHILDLESS | TEXT_NODE))) this._parentNode = node
+      if ((flags & ELEMENT) && !(flags & CHILDLESS)) this._parentNode = node
     }
 
     close(count = 1) {
@@ -152,11 +143,12 @@ let HTX = function() {
           }
         }
 
-        if (this._xmlnsStack.length > 0 && currentNode == this._xmlnsStack[0]) {
-          this._xmlnsStack.shift()
-        }
-
         this._currentNode = parentNode
+      }
+
+      if (this._staticKeys.get(this._currentNode) == 1) {
+        this._dynamicIndex = this._dynamicIndexTmp
+        delete this._dynamicIndexTmp
       }
     }
   }
