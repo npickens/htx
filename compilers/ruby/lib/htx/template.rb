@@ -40,7 +40,7 @@ module HTX
 
     ##
     # Returns false. In the near future when support for the <:> tag has been dropped (in favor of
-    # <htx-text>), will return true if Nokogiri's HTML5 parser is available. To use it now, monkey patch
+    # <htx-content>), will return true if Nokogiri's HTML5 parser is available. To use it now, monkey patch
     # this method to return true.
     #
     def self.html5_parser?
@@ -311,9 +311,9 @@ module HTX
     #
     # Note: Nokogiri's newer HTML5 parser resulting from the Nokogumbo merge fixes this issue, but it is
     # currently not available for JRuby. It also does not parse <:> as a tag, which is why it's been
-    # deprecated in favor of <htx-text>. Once support for <:> has been completely removed, the HTML5 parser
-    # will be used for regular Ruby and this tag and attribute mapping hack reserved for JRuby (and any
-    # other potential environments where the HTML5 parser is not available).
+    # deprecated in favor of <htx-content>. Once support for <:> has been completely removed, the HTML5
+    # parser will be used for regular Ruby and this tag and attribute mapping hack reserved for JRuby (and
+    # any other potential environments where the HTML5 parser is not available).
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Element
     TAG_MAP = %w[
