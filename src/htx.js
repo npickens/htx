@@ -107,7 +107,7 @@ let HTX = function() {
           node = document.createElement(object)
         }
 
-        if (flags & XMLNS) this._xmlnsStack.unshift(node)
+        if (flags & XMLNS && !(flags & CHILDLESS)) this._xmlnsStack.unshift(node)
       } else {
         if (object && object.render instanceof Function) object = object.render()
         if (object === null || object === undefined) object = ''
