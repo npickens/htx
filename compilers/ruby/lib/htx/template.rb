@@ -117,7 +117,7 @@ module HTX
     #
     # * +base+ - Base Nokogiri node to start from.
     #
-    def process(base)
+    def process(base, xmlns: false)
       base.children.each do |node|
         next unless node.element? || node.text?
 
@@ -156,7 +156,8 @@ module HTX
           end
         else
           childless = node.children.empty? || (node.children.size == 1 && node.children[0].text.strip == '')
-          attrs, xmlns = process_attrs(node)
+          attrs, explicit_xmlns = process_attrs(node)
+          xmlns ||= explicit_xmlns
 
           append("htx.node(#{[
             "'#{tag_name(node.name)}'",
@@ -166,7 +167,7 @@ module HTX
           ].compact.flatten.join(', ')})")
 
           unless childless
-            process(node)
+            process(node, xmlns: xmlns)
 
             count = ''
             @compiled.sub!(CLOSE_STATEMENT) do

@@ -37,7 +37,6 @@ let HTX = function() {
      */
     constructor(template) {
       this._template = template
-      this._xmlnsStack = []
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
       this._dynamicIndex = {}
@@ -98,16 +97,12 @@ let HTX = function() {
       if (flags & ELEMENT) {
         if (exists) {
           node = currentNode
-        } else if (flags & XMLNS || this._xmlnsStack.length > 0) {
-          node = document.createElementNS(
-            (flags & XMLNS) ? args[args.indexOf('xmlns') + 1] : this._xmlnsStack[0].namespaceURI,
-            object
-          )
+        } else if (flags & XMLNS) {
+          node = document.createElementNS(args[args.indexOf('xmlns') + 1 || -1] || parentNode.namespaceURI,
+            object)
         } else {
           node = document.createElement(object)
         }
-
-        if (flags & XMLNS && !(flags & CHILDLESS)) this._xmlnsStack.unshift(node)
       } else {
         if (object && object.render instanceof Function) object = object.render()
         if (object === null || object === undefined) object = ''
@@ -184,10 +179,6 @@ let HTX = function() {
           while (currentNode && currentNode.nextSibling) {
             currentNode.nextSibling.remove()
           }
-        }
-
-        if (this._xmlnsStack.length > 0 && parentNode == this._xmlnsStack[0]) {
-          this._xmlnsStack.shift()
         }
 
         this._currentNode = parentNode
