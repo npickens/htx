@@ -146,7 +146,7 @@ def build_javascript_file(*src_files)
     lib_name = content[/^(let|class) (\w+)/, 2]
 
     content.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
-    content.gsub!(/^ *\/\/.*\n/, '')
+    content.gsub!(/\n? *\/\/.*/, '')
     content.prepend(javascript_comment(lib_name))
 
     lib_names << lib_name
