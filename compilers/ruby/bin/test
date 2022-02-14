@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-BASE_DIR = File.dirname(__dir__).freeze
-LIB_NAME = File.basename(Dir[File.join(BASE_DIR, '*.gemspec')].first, '.gemspec').freeze
-TEST_GLOB = File.expand_path("{test,#{LIB_NAME}-*/test}/**/*_test.rb", BASE_DIR).freeze
-
-Dir.chdir(BASE_DIR) # Ensure Bundler always works.
+Dir.chdir(File.dirname(__dir__))
 
 require('bundler/setup')
-require('minitest/autorun')
 
-Bundler.require(:default, :development, :test)
-Dir[TEST_GLOB].each { |file| require(file) }
+BASE_DIR = Dir.pwd.freeze
+LIB_NAME = File.basename(Dir[File.join(BASE_DIR, '*.gemspec')].first, '.gemspec').freeze
+TEST_GLOB = File.join(BASE_DIR, "{.,#{"#{LIB_NAME}-*"}}", 'test', '**', '*_test.rb').freeze
+
+Dir[TEST_GLOB].each do |file|
+  require(file)
+end
