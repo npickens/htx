@@ -1,54 +1,47 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-############################################################################################################
-## Requires                                                                                               ##
-############################################################################################################
-
-require('bundler')
-
 Dir.chdir(File.dirname(__dir__))
-Bundler.setup(:default)
 
+require('bundler/setup')
 require('nokogiri')
 require('open-uri')
 
-############################################################################################################
-## Config                                                                                                 ##
-############################################################################################################
-
+BASE_DIR = Dir.pwd.freeze
+CODE_FILE = File.join(BASE_DIR, 'lib', 'htx', 'template.rb').freeze
+MOZILLA_BASE_URL = 'https://developer.mozilla.org/en-US/docs/Web/SVG/'
 MAX_LINE_LENGTH = 108
-CODE_FILE_WITH_MAPS = File.join('lib', 'htx', 'template.rb').freeze
 
-############################################################################################################
-## Run                                                                                                    ##
-############################################################################################################
-
-code = File.read(CODE_FILE_WITH_MAPS)
+code = File.read(CODE_FILE)
+error = nil
 
 [
   ['TAG_MAP', 'Element', 'article.main-page-content > div > ul > li > a > code'],
   ['ATTR_MAP', 'Attribute', 'article.main-page-content > div > ul > li > code > a'],
-].each.with_index do |(const, page, css), i|
-  const_regex = /(#{const} = %w\[\n)( *)([\w \n]+)(\n *)/.freeze
+].each do |(const, page, selector)|
+  result = code.sub!(/^( *)#{const} = [^\]]+/) do
+    indent_const = $1
+    indent = "#{indent_const}  "
+    break_at = MAX_LINE_LENGTH - indent.size
 
-  unless code =~ const_regex
-    abort("Content of #{CODE_FILE_WITH_MAPS.inspect} not as expected: cannot find #{const} definition")
+    doc = Nokogiri::HTML(URI.open("#{MOZILLA_BASE_URL}#{page}"))
+    items = doc.css(selector)
+               .map { |n| n.text.delete_prefix('<').delete_suffix('>') }
+               .select { |t| t.match?(/[A-Z]/) }
+               .sort
+               .join(' ')
+               .gsub(/([\w ]{1,#{break_at}})( |$)/, "\n#{indent}\\1")
+
+    "#{indent_const}#{const} = %w[#{items}\n#{indent_const}"
   end
 
-  doc = Nokogiri::HTML(URI.open("https://developer.mozilla.org/en-US/docs/Web/SVG/#{page}"))
-  elements = doc.css(css)
-                .map { |n| n.text.match(/^\<?([^>]+)\>?$/)[1] }
-                .select { |t| t =~ /[A-Z]/ }
-                .sort
-
-  code.sub!(const_regex) do
-    prefix, indent, suffix = $1, $2, $4
-    length = MAX_LINE_LENGTH - indent.size
-    items = elements.join(' ').gsub(/([\w ]{,#{length}})( |$)/, "\\1\n#{indent}").rstrip
-
-    "#{prefix}#{indent}#{items}#{suffix}"
+  if result
+    puts("\e[32m\u2714 #{const} updated in #{CODE_FILE}\e[39m")
+  else
+    $stderr.puts("\e[31m\u2718 #{const} not updated in #{CODE_FILE} (could not find definition)\e[39m")
+    error = true
   end
 end
 
-File.open(CODE_FILE_WITH_MAPS, 'w') { |f| f.write(code) }
+File.write(CODE_FILE, code)
+exit(1) if error
