@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-version = File.read(File.expand_path('../../../VERSION', __FILE__)).strip
+version = File.read(File.join(__dir__, 'VERSION')).strip.freeze
 
 Gem::Specification.new('htx', version) do |spec|
   spec.authors       = ['Nate Pickens']
