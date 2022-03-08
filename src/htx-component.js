@@ -27,7 +27,7 @@ let HTXComponent = function() {
      * @param htxPath The path (name) of the compiled HTX template to use for this component.
      */
     constructor(htxPath) {
-      this.htxPath = htxPath
+      this.htx = new HTX(htxPath, this)
     }
 
     /**
@@ -44,7 +44,7 @@ let HTXComponent = function() {
       }
 
       renderRoot = renderRoot || this
-      this.node = HTX.render(this.node || this.htxPath, this)
+      this.node = htx.render()
 
       if (this.didRender) didRenders.push([this, initial])
       if (!isMounting && renderRoot == this) runDidRenders()

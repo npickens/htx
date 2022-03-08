@@ -13,6 +13,8 @@ let HTX = function() {
 
   return class {
     /**
+     * DEPRECATED. Create an HTX instance with `new HTX(...)` and call `render` on it instead.
+     *
      * Calls a template function to either create a new Node or update an existing one.
      *
      * @param object The name of a template function, a reference to a template function, or a Node object
@@ -20,25 +22,47 @@ let HTX = function() {
      * @param context The context (`this` binding) for the template function call (optional).
      */
     static render(object, context) {
-      let htx = instances.get(object) || new HTX((HTX.templates || window)[object] || object)
-      if (!htx) throw `Template not found: ${object}`
+      console.warn('HTX.render is deprecated. Please use new HTX(...).render() instead.')
 
-      if (context) htx._context = context
-      htx._template.call(htx._context, htx)
+      let htx
 
-      return htx._currentNode
+      if (object instanceof Node) {
+        htx = instances.get(object)
+        if (!htx) throw `HTX instance not found for Node: ${object}`
+        if (context) htx._context = context
+      } else {
+        htx = new HTX(object, context)
+      }
+
+      return htx.render()
     }
 
     /**
      * Creates a new HTX instance.
      *
      * @constructor
+     * @param template Name of or direct reference to a template function.
+     * @param context Context (`this` binding) for the template function call.
      */
-    constructor(template) {
-      this._template = template
+    constructor(template, context) {
+      this._template = (HTX.templates || window)[template] || template
+      this._context = context
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
       this._dynamicIndex = {}
+
+      if (!this._template) throw `Template not found: ${template}`
+    }
+
+    /**
+     * Renders the template.
+     *
+     * @returns Root Node object of the template.
+     */
+    render() {
+      this._template.call(this._context, this)
+
+      return htx._currentNode
     }
 
     /**

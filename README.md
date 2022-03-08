@@ -38,7 +38,8 @@ window['/components/people.htx'] = function(htx) {
 }
 ```
 
-`HTX.render` leverages this function to both generate a brand new DOM fragment and update an existing one:
+The HTX library leverages this function to both generate a brand new DOM fragment and update an existing
+one:
 
 ```javascript
 let crew = {
@@ -50,12 +51,17 @@ let crew = {
   ],
 }
 
-// HTX.render returns a standard Node object.
-let crewNode = HTX.render('/components/people.htx', crew)
-document.body.append(crewNode)
+// The constructor takes the name of or direct reference to a template function and a context
+// (`this` binding) to use whenever the template function is called.
+let htx = new HTX('/components/people.htx', crew)
 
-HTX.render(crewNode) // Update the DOM when the `crew` object changes.
-HTX.render(crewNode, otherCrew) // Update the DOM with an entirely new context.
+// The `render` function returns a standard Node object.
+document.body.append(htx.render())
+
+// Subsequent calls re-render the existing Node, in this case refreshing it to reflect the
+// current state of the `crew` object.
+crew.people.push({role: 'pilot', name: 'Wash'})
+htx.render()
 ```
 
 The result:
