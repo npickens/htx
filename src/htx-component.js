@@ -24,7 +24,7 @@ let HTXComponent = function() {
      * Creates a new HTXComponent instance.
      *
      * @constructor
-     * @param htxPath The path (name) of the compiled HTX template to use for this component.
+     * @param htxPath Name or direct reference to a compiled HTX template function.
      */
     constructor(htxPath) {
       this.htx = new HTX(htxPath, this)
@@ -34,7 +34,7 @@ let HTXComponent = function() {
      * Creates the DOM fragment for this component if this is the first call; updates the existing DOM
      * otherwise. Calls `didRender` afterwards if it is defined.
      *
-     * @return The root DOM node returned by the HTX template function.
+     * @return Root DOM node returned by the HTX template function.
      */
     render() {
       let initial = !this.node
@@ -56,9 +56,9 @@ let HTXComponent = function() {
      * Inserts this component's DOM fragment into another (usually the main document). Should only be called
      * once for initial rendering.
      *
-     * @param placement The placement relative to placementNode (default is 'append'; can be 'prepend',
+     * @param placement Placement relative to placementNode (default is 'append'; can be 'prepend',
      *   'append', 'replace', 'before', or 'after').
-     * @param placementNode The node this component is being placed relative to (default is document.body).
+     * @param placementNode Node this component is being placed relative to (default is `document.body`).
      */
     mount(...args) {
       isMounting = true

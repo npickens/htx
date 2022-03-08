@@ -1,7 +1,6 @@
 /**
- * HTX renders compiled HTX templates. `HTX.render` is the only function that should ever be called
- * directly, first by passing the name of a template function and subsequently (for DOM updates) by passing
- * the returned Node object from the original call.
+ * HTX renders compiled HTX templates. An HTX instance's `render` function is the only one that should ever
+ * be called directly, both for the initial render and for subsequent DOM updates.
  */
 let HTX = function() {
   const ELEMENT   = 1 << 0
@@ -17,9 +16,10 @@ let HTX = function() {
      *
      * Calls a template function to either create a new Node or update an existing one.
      *
-     * @param object The name of a template function, a reference to a template function, or a Node object
-     *   previously returned by this function that needs updating.
-     * @param context The context (`this` binding) for the template function call (optional).
+     * @param object Name of or direct reference to a template function, or Node object previously returned
+     *   by this function that needs updating.
+     * @param context Context (`this` binding) for the template function call (optional when `object` is an
+     *   existing Node being updated).
      */
     static render(object, context) {
       console.warn('HTX.render is deprecated. Please use new HTX(...).render() instead.')
@@ -68,8 +68,8 @@ let HTX = function() {
     /**
      * Appends or updates a node.
      *
-     * @param object A tag name (e.g. 'div'), Node object, object with a `render` function whose return
-     *   value should be used, or any other object which will be cast to a string and inserted as text.
+     * @param object Tag name (e.g. 'div'), Node object, object with a `render` function which returns a
+     *   Node object, or any other object which will be cast to a string and inserted as text.
      * @param args First N (optional) are node attributes in the form key1, value1, key2, value2, ....
      *   Second-to-last (optional) is the node's dynamic key (user-provided key for loop-based content to
      *   optimize update performance). Last (required) is the node's static key (compiler-generated index

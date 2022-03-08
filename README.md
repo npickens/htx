@@ -15,13 +15,13 @@ and tag content to issue control statements and render dynamic content. Here's a
 Syntax](#template-syntax) section for the full spec):
 
 ```html
-<div class='people'>
+<div class='crew'>
   <h1>${this.title}</h1>
 
-  <ul class='people-list'>
-    for (let person of this.people) {
-      <li class='person ${person.role}'>
-        ${person.name}
+  <ul class='members'>
+    for (let member of this.member) {
+      <li class='member ${member.role}'>
+        ${member.name}
       </li>
     }
   </ul>
@@ -33,7 +33,7 @@ library. The full compiled version of the above template is shown in the [Compil
 in summary it takes the following form:
 
 ```javascript
-window['/components/people.htx'] = function(htx) {
+window['/components/crew.htx'] = function(htx) {
   // ...
 }
 ```
@@ -44,7 +44,7 @@ one:
 ```javascript
 let crew = {
   title: 'Serenity Crew',
-  people: [
+  members: [
     {role: 'captain', name: 'Mal'},
     {role: 'first-mate', name: 'Zoe'},
     {role: 'mercenary', name: 'Jayne'},
@@ -53,27 +53,28 @@ let crew = {
 
 // The constructor takes the name of or direct reference to a template function and a context
 // (`this` binding) to use whenever the template function is called.
-let htx = new HTX('/components/people.htx', crew)
+let htx = new HTX('/components/crew.htx', crew)
 
 // The `render` function returns a standard Node object.
 document.body.append(htx.render())
 
 // Subsequent calls re-render the existing Node, in this case refreshing it to reflect the
 // current state of the `crew` object.
-crew.people.push({role: 'pilot', name: 'Wash'})
+crew.members.push({role: 'pilot', name: 'Wash'})
 htx.render()
 ```
 
 The result:
 
 ```html
-<div class='people'>
+<div class='crew'>
   <h1>Serenity Crew</h1>
 
-  <ul class='people-list'>
-    <li class='person captain'>Mal</li>
-    <li class='person first-mate'>Zoe</li>
-    <li class='person mercenary'>Jayne</li>
+  <ul class='members'>
+    <li class='member captain'>Mal</li>
+    <li class='member first-mate'>Zoe</li>
+    <li class='member mercenary'>Jayne</li>
+    <li class='member pilot'>Wash</li>
   </ul>
 </div>
 ```
@@ -119,9 +120,9 @@ function.
 ```
 
 **IMPORTANT NOTE:** Curly braces should always be used, even for single-line loops, `if` statements, and
-function definitions. Control statements are directly inserted into the compiled JavaScript code, but live
-alongside compiler-generated statements. The latter may not do what they are supposed to if curly braces are
-omitted. See the [Compiler](#compiler) section for more detail.
+arrow function expressions. Control statements are directly inserted into the compiled JavaScript code, but
+live alongside compiler-generated statements. The latter may not do what they are supposed to if curly
+braces are omitted. See the [Compiler](#compiler) section for more detail.
 
 ### Output
 
@@ -226,8 +227,8 @@ only attribute allowed is `htx-key`.)
 ```html
 <!-- Template -->
 <textarea class='names'>
-  for (let person of this.people) {
-    <htx-content>${person.name}...</htx-content>
+  for (let member of this.members) {
+    <htx-content>${member.name}...</htx-content>
   }
 </textarea>
 
@@ -245,10 +246,10 @@ included as an actual attribute on the resulting DOM node, but is leveraged by t
 Library](#javascript-library) to optimize the performance of DOM updates.
 
 ```html
-<ul class='people-list'>
-  for (let person of this.people) {
-    <li class='person ${person.role}' htx-key='${person.id}'>
-      ${person.name}
+<ul class='members'>
+  for (let member of this.members) {
+    <li class='member ${member.role}' htx-key='${member.id}'>
+      ${member.name}
     </li>
   }
 </ul>
@@ -262,10 +263,10 @@ Example:
 
 ```html
 <!-- Template -->
-<li class='person ${person.role}'>...</li>
+<li class='member ${member.role}'>...</li>
 
-<!-- Result when person.role is 'captain' -->
-<li class='person captain'>...</li>
+<!-- Result when member.role is 'captain' -->
+<li class='member captain'>...</li>
 ```
 
 One special case is made for boolean(ish) values: if the attribute value is strictly JavaScript (no static
@@ -274,13 +275,13 @@ attribute. Example:
 
 ```html
 <!-- Template -->
-<li class='person' selected='${person.selected}'>...</div>
+<li class='member' selected='${member.selected}'>...</div>
 
-<!-- Result when person.selected === true -->
-<li class='person' selected>...</div>
+<!-- Result when member.selected === true -->
+<li class='member' selected>...</div>
 
-<!-- Result when person.selected === false, null, or undefined -->
-<li class='person'>...</div>
+<!-- Result when member.selected === false, null, or undefined -->
+<li class='member'>...</div>
 ```
 
 ## Compiler
@@ -292,7 +293,7 @@ do the bulk of the heavy lifting (as is the case with the Ruby compiler, which l
 Calling the compiler is simple:
 
 ```ruby
-path = '/components/people.htx'
+path = '/components/crew.htx'
 content = File.read("/assets#{path}")
 
 HTX.compile(path, content)
@@ -304,21 +305,21 @@ HTX.compile(path, content, assign_to: 'myTemplates')
 Result:
 
 ```javascript
-window['/components/people.htx'] = function(htx) {
-  htx.node('div', 'class', `people`, 8)
+window['/components/crew.htx'] = function(htx) {
+  htx.node('div', 'class', `crew`, 8)
     htx.node('h1', 16); htx.node(this.title, 26); htx.close()
 
-    htx.node('ul', 'class', `people-list`, 32)
-      for (let person of this.people) {
-        htx.node('li', 'class', `person ${person.role}`, 40)
-          htx.node(person.name, 50)
+    htx.node('ul', 'class', `members`, 32)
+      for (let member of this.members) {
+        htx.node('li', 'class', `member ${member.role}`, 40)
+          htx.node(member.name, 50)
         htx.close()
       }
   htx.close(2)
 }
 
 // If `assign_to` is specified:
-myTemplates['/components/people.htx'] = function(htx) {
+myTemplates['/components/crew.htx'] = function(htx) {
   // ...
 }
 ```
@@ -386,11 +387,11 @@ The HTX Component JavaScript library is a small and optional part of HTX. It pro
 the HTX template function to be used by the component.
 
 ```javascript
-class People extends HTXComponent {
+class Crew extends HTXComponent {
   constructor() {
-    super('/components/people.htx')
+    super('/components/crew.htx')
 
-    this.list = [
+    this.members = [
       {role: 'captain', name: 'Mal'},
       {role: 'first-mate', name: 'Zoe'},
       {role: 'mercenary', name: 'Jayne'},
@@ -413,12 +414,12 @@ functions:
 
 ```javascript
 // Initial rendering and insertion into the DOM.
-let people = new People()
-people.mount('prepend', document.querySelector('#container'))
+let crew = new Crew()
+crew.mount('prepend', document.querySelector('#container'))
 
 // The component's render function must be called to refresh the DOM.
-people.list.push({role: 'pilot', name: 'Hoban Washburne'})
-people.render()
+crew.members.push({role: 'pilot', name: 'Wash'})
+crew.render()
 ```
 
 An optional `didRender` function can be implemented by the child component class, which will be called
@@ -426,7 +427,7 @@ whenever a render occurs. It is passed one argument that is `true` on the initia
 thereafter.
 
 ```javascript
-class People extends HTXComponent {
+class Crew extends HTXComponent {
   // ...
 
   didRender(initial) {
