@@ -7,7 +7,6 @@ let HTX = function() {
   const ELEMENT   = 1 << 0
   const CHILDLESS = 1 << 1
   const XMLNS     = 1 << 2
-  const FLAG_MASK = 0b111
   const FLAG_BITS = 3
 
   let instances = new WeakMap
@@ -59,7 +58,7 @@ let HTX = function() {
       let parentNode = this._parentNode
 
       let l = args.length
-      let flags = args[l - 1] & FLAG_MASK
+      let flags = args[l - 1]
       let staticKey = args[l - 1] >> FLAG_BITS
       let dynamicKey = l % 2 == 0 && args[l - 2]
       let fullKey = `${staticKey}:${dynamicKey}`
