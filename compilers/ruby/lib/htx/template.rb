@@ -4,9 +4,9 @@ require('nokogiri')
 
 module HTX
   class Template
-    ELEMENT   = 0b001
-    CHILDLESS = 0b010
-    XMLNS     = 0b100
+    ELEMENT   = 1 << 0
+    CHILDLESS = 1 << 1
+    XMLNS     = 1 << 2
     FLAG_BITS = 3
 
     INDENT_DEFAULT = '  '

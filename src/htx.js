@@ -4,9 +4,9 @@
  * the returned Node object from the original call.
  */
 let HTX = function() {
-  const ELEMENT   = 0b001 // An HTML tag (as opposed to dynamic content).
-  const CHILDLESS = 0b010 // Node does not have any children.
-  const XMLNS     = 0b100 // Node has an XML namespace attribute.
+  const ELEMENT   = 1 << 0
+  const CHILDLESS = 1 << 1
+  const XMLNS     = 1 << 2
   const FLAG_MASK = 0b111
   const FLAG_BITS = 3
 
