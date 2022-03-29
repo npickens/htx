@@ -13,8 +13,12 @@ module HTX
   ##
   # Convenience method to create a new Template instance and compile it.
   #
-  def self.compile(name, template, options = EMPTY_HASH)
-    Template.new(name, template).compile(**options)
+  # * +name+ - Template name. Conventionally the path of the template file.
+  # * +content+ - Template content.
+  # * +options+ - Options to be passed to Template#compile.
+  #
+  def self.compile(name, content, options = EMPTY_HASH)
+    Template.new(name, content).compile(**options)
   end
 
   ##
@@ -22,9 +26,8 @@ module HTX
   # compilation. This method allows HTX.new calls to continue working (but support will be removed in the
   # near future).
   #
-  # * +name+ - Name of the template. Conventionally the path of the template file is used for the name,
-  #   but it can be anything.
-  # * +content+ - Template content string.
+  # * +name+ - Template name. Conventionally the path of the template file.
+  # * +content+ - Template content.
   #
   def self.new(name, content)
     warn('HTX.new is deprecated. Please use HTX::Template.new instead.')
