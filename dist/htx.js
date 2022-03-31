@@ -3,33 +3,47 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.7
+ * @version 0.0.8
  */
 let HTX = function() {
-  const ELEMENT   = 0b001
-  const CHILDLESS = 0b010
-  const XMLNS     = 0b100
-  const FLAG_MASK = 0b111
+  const ELEMENT   = 1 << 0
+  const CHILDLESS = 1 << 1
+  const XMLNS     = 1 << 2
   const FLAG_BITS = 3
 
   let instances = new WeakMap
 
   return class {
     static render(object, context) {
-      let htx = instances.get(object) || new HTX((HTX.templates || window)[object] || object)
-      if (!htx) throw `Template not found: ${object}`
+      console.warn('HTX.render is deprecated. Please use new HTX(...).render() instead.')
 
-      if (context) htx._context = context
-      htx._template.call(htx._context, htx)
+      let htx
 
-      return htx._currentNode
+      if (object instanceof Node) {
+        htx = instances.get(object)
+        if (!htx) throw `HTX instance not found for Node: ${object}`
+        if (context) htx._context = context
+      } else {
+        htx = new HTX(object, context)
+      }
+
+      return htx.render()
     }
 
-    constructor(template) {
-      this._template = template
+    constructor(template, context) {
+      this._template = (HTX.templates || window)[template] || template
+      this._context = context
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
       this._dynamicIndex = {}
+
+      if (!this._template) throw `Template not found: ${template}`
+    }
+
+    render() {
+      this._template.call(this._context, this)
+
+      return htx._currentNode
     }
 
     node(object, ...args) {
@@ -38,7 +52,7 @@ let HTX = function() {
       let parentNode = this._parentNode
 
       let l = args.length
-      let flags = args[l - 1] & FLAG_MASK
+      let flags = args[l - 1]
       let staticKey = args[l - 1] >> FLAG_BITS
       let dynamicKey = l % 2 == 0 && args[l - 2]
       let fullKey = `${staticKey}:${dynamicKey}`

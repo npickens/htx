@@ -3,7 +3,7 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.7
+ * @version 0.0.8
  */
 let HTXComponent = function() {
   let isMounting
@@ -21,7 +21,7 @@ let HTXComponent = function() {
 
   return class {
     constructor(htxPath) {
-      this.htxPath = htxPath
+      this.htx = new HTX(htxPath, this)
     }
 
     render() {
@@ -32,7 +32,7 @@ let HTXComponent = function() {
       }
 
       renderRoot = renderRoot || this
-      this.node = HTX.render(this.node || this.htxPath, this)
+      this.node = htx.render()
 
       if (this.didRender) didRenders.push([this, initial])
       if (!isMounting && renderRoot == this) runDidRenders()
