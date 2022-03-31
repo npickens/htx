@@ -99,9 +99,13 @@ render dynamic content.
 
 ### Control Flow
 
-If a tag's content (text node) contains at least one curly brace, parenthesis, or semicolon, it is
-interpreted as a control statement and the compiler directly inserts it into the generated JavaScript
-function.
+A tag's content (text node) is interpreted as a control statement by the compiler and inserted directly into
+the generated JavaScript function if it contains any of the following:
+
+* A variable assignment or increment/decrement (examples: `greeting = 'hello'` or `i += 1`)
+* A function call (example: `this.greet('hello')`)
+* An object reference using square brackets (example: `this.members[0]`)
+* An opening or closing curly brace (`{` or `}`)
 
 ```html
 <!-- Template -->
@@ -119,37 +123,41 @@ function.
 </div>
 ```
 
-**IMPORTANT NOTE:** Curly braces should always be used, even for single-line loops, `if` statements, and
+**IMPORTANT NOTE 1:** Curly braces should always be used, even for single-line loops, `if` statements, and
 arrow function expressions. Control statements are directly inserted into the compiled JavaScript code, but
 live alongside compiler-generated statements. The latter may not do what they are supposed to if curly
 braces are omitted. See the [Compiler](#compiler) section for more detail.
+
+**IMPORTANT NOTE 2:** Though JavaScript syntax allows whitespace between an identifier and a parenthesis or
+square bracket, HTX will only recognize function calls and object references as control statements if there
+is no whitespace. **DO** `this.greet('hello')` and `this.members[0]`. **DO NOT** `this.greet ('hello')` and
+`this.members [0]`.
 
 ### Output
 
 Rendering dynamic content happens by way of JavaScript's string interpolation syntax, `${...}`. A tag's
 content is interpreted by the compiler as output to render if any of the following are true:
 
-1. It contains no curly braces, parentheses, or semicolons (i.e. the condition for it being a control
-   statement is not met).
+1. None of the conditions for being a control statement (see above) are met.
    ```html
    <!-- Template -->
-   <div>Hello World!</div>
+   <div>Hello, World!</div>
 
    <!-- Result -->
-   <div>Hello World!</div>
+   <div>Hello, World!</div>
    ```
 
-2. It contains no parentheses or semicolons, and its only instances of curly braces are interpolations
-   (`${...}`).
+2. None of the conditions for being a control statement are met except interpolations (`${...}`).
    ```html
    <!-- Template -->
-   <div>Hello ${this.name}!</div>
+   <div>Hello, ${this.name}!</div>
 
    <!-- Result when this.name is 'Mal' -->
-   <div>Hello Mal!</div>
+   <div>Hello, Mal!</div>
    ```
 
-3. It is quoted with backticks and/or encapsulated in `${...}`.
+3. The entire text (other than leading and trailing whitespace) is quoted with backticks and/or encapsulated
+   in `${...}`.
    ```html
    <!-- Template -->
    <div>`The Serenity crew is led by ${this.captain} (and ${this.firstMate}).`</div>

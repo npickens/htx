@@ -2,6 +2,7 @@
 
 require('htx/malformed_template_error')
 require('htx/template')
+require('htx/text_parser')
 require('htx/version')
 
 ##

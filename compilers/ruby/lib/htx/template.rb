@@ -12,31 +12,24 @@ module HTX
     INDENT_DEFAULT = '  '
     CONTENT_TAG = 'htx-content'
     DYNAMIC_KEY_ATTR = 'htx-key'
-
     DEFAULT_XMLNS = {
       'math' => 'http://www.w3.org/1998/Math/MathML',
       'svg' => 'http://www.w3.org/2000/svg',
     }.freeze
 
-    LEADING_WHITESPACE = /\A[ \t]*\n[ \t]*/.freeze
-    TRAILING_WHITESPACE = /\n[ \t]*\z/.freeze
-    NON_BLANK_NON_FIRST_LINE = /(?<=\n)[ \t]*(?=\S)/.freeze
-    NEWLINE_NON_BLANK = /\n(?=[^\n])/.freeze
-    INDENT_GUESS = /^[ \t]+/.freeze
+    INDENT_VALID = /^( +|\t+)$/.freeze
+    INDENT_GUESS = /^( +|\t+)(?=\S)/.freeze
+    INDENT_REGEX = /\n(?=[^\n])/.freeze
 
-    END_STATEMENT_END = /(;|\n|\{|\})[ \t]*\z/.freeze
-    BEGIN_STATEMENT_END = /\A[ \t]*(;|\{|\n|\})/.freeze
-    END_WHITESPACE = /\s\z/.freeze
-    BEGIN_WHITESPACE = /\A\s/.freeze
+    NO_SEMICOLON_BEGIN = /\A\s*[\n;}]/.freeze
+    NO_SEMICOLON_END = /(\A|[\n;{}][^\S\n]*)\z/.freeze
 
-    RAW_VALUE = /\A\s*\${([\S\s]*)}\s*\z/.freeze
-    TEMPLATE_STRING = /\A\s*`([\S\s]*)`\s*\z/.freeze
-    INTERPOLATION = /\$\\?{([^}]*})?/.freeze
-    HTML_ENTITY = /&([a-zA-Z]+|#\d+|x[0-9a-fA-F]+);/.freeze
-    NON_CONTROL_STATEMENT = /#{INTERPOLATION}|(#{HTML_ENTITY})/.freeze
-    CONTROL_STATEMENT = /[{}();]/.freeze
-    UNESCAPED_BACKTICK = /(?<!\\)((\\\\)*)`/.freeze
-    CLOSE_STATEMENT = /;?\s*htx\.close\((\d*)\);?(\s*)\z/.freeze
+    NEWLINE_BEGIN = /\A\s*\n/.freeze
+    NEWLINE_END = /\n[^\S\n]*\z/.freeze
+    NEWLINE_END_OPTIONAL = /\n?[^\S\n]*\z/.freeze
+
+    WHITESPACE_BEGIN = /\A\s/.freeze
+    NON_WHITESPACE = /\S/.freeze
 
     ##
     # Returns false. In the near future when support for the <:> tag has been dropped (in favor of
@@ -52,15 +45,14 @@ module HTX
     # otherwise.
     #
     def self.nokogiri_parser
-      html5_parser? ? Nokogiri::HTML5::DocumentFragment : Nokogiri::HTML::DocumentFragment
+      html5_parser? ? Nokogiri::HTML5 : Nokogiri::HTML
     end
 
     ##
-    # Creates a new HTX instance.
+    # Creates a new instance.
     #
-    # * +name+ - Name of the template. Conventionally the path of the template file is used for the name,
-    #   but it can be anything.
-    # * +content+ - Template content string.
+    # * +name+ - Template name. Conventionally the path of the template file.
+    # * +content+ - Template content.
     #
     def initialize(name, content)
       @name = name
@@ -70,113 +62,194 @@ module HTX
     ##
     # Compiles the HTX template.
     #
-    # * +indent+ - Indent output by this number of spaces if Numeric, or by this string if a String (if the
-    #   latter, may only contain space and tab characters).
-    # * +assign_to+ - Assign the template function to this JavaScript object instead of the <tt>window</tt>
-    #   object.
+    # * +assign_to+ - JavaScript object to assign the template function to (default: <tt>window</tt>).
+    # * +indent+ - Indentation amount (number) or string (must be only spaces or tabs but not both) to use
+    #   for indentation of compiled output (default: indentation of first indented line of uncompiled
+    #   template).
     #
-    def compile(indent: nil, assign_to: 'window')
-      doc = self.class.nokogiri_parser.parse(@content)
-      root_nodes = doc.children.select { |n| n.element? || (n.text? && n.text.strip != '') }
-
-      if (text_node = root_nodes.find(&:text?))
-        raise(MalformedTemplateError.new('text nodes are not allowed at root level', @name, text_node))
-      elsif root_nodes.size == 0
-        raise(MalformedTemplateError.new('a root node is required', @name))
-      elsif root_nodes.size > 1
-        raise(MalformedTemplateError.new("root node already defined on line #{root_nodes[0].line}", @name,
-            root_nodes[1]))
-      end
-
-      @compiled = ''.dup
-      @static_key = 0
-
+    def compile(assign_to: nil, indent: nil)
+      @assign_to = assign_to || 'window'
       @indent =
         if indent.kind_of?(Numeric)
           ' ' * indent
-        elsif indent.kind_of?(String) && indent !~ /^[ \t]+$/
-          raise("Invalid indent value #{indent.inspect}: only spaces and tabs are allowed")
+        elsif indent && !indent.match?(INDENT_VALID)
+          raise("Invalid indent value #{indent.inspect}: only spaces and tabs (but not both) are allowed")
         else
           indent || @content[INDENT_GUESS] || INDENT_DEFAULT
         end
 
-      process(doc)
-      @compiled.rstrip!
+      @static_key = 0
+      @close_count = 0
+      @whitespace_buff = nil
+      @statement_buff = +''
+      @compiled = +''
 
-      <<~EOS
-        #{assign_to}['#{@name}'] = function(htx) {
-        #{@indent}#{@compiled}
-        }
-      EOS
+      doc = self.class.nokogiri_parser.fragment(@content)
+      preprocess(doc)
+      process(doc)
+
+      @compiled
     end
 
     private
 
     ##
+    # Removes comment nodes and merges any adjoining text nodes that result from such removals.
+    #
+    # * +node+ - Nokogiri node to preprocess.
+    #
+    def preprocess(node)
+      if node.text?
+        if node.parent&.fragment? && node.blank?
+          node.remove
+        elsif (prev_node = node.previous)&.text?
+          prev_node.content += node.content
+          node.remove
+        end
+      elsif node.comment?
+        if node.previous&.text? && node.next&.text? && node.next.content.match?(NEWLINE_BEGIN)
+          content = node.previous.content.sub!(NEWLINE_END_OPTIONAL, '')
+          content.empty? ? node.previous.remove : node.previous.content = content
+        end
+
+        node.remove
+      end
+
+      node.children.each do |child|
+        preprocess(child)
+      end
+
+      if node.fragment?
+        children = node.children
+        root, root2 = children[0..1]
+
+        if (child = children.find(&:text?))
+          raise(MalformedTemplateError.new('text nodes are not allowed at root level', @name, child))
+        elsif !root
+          raise(MalformedTemplateError.new('a root node is required', @name))
+        elsif root2
+          raise(MalformedTemplateError.new("root node already defined on line #{root.line}", @name, root2))
+        end
+      end
+    end
+
+    ##
     # Processes a DOM node's descendents.
     #
-    # * +base+ - Base Nokogiri node to start from.
+    # * +node+ - Nokogiri node to process.
     #
-    def process(base, xmlns: false)
-      base.children.each do |node|
-        next unless node.element? || node.text?
+    def process(node, xmlns: false)
+      if node.fragment?
+        process_fragment_node(node)
+      elsif node.element?
+        process_element_node(node, xmlns: xmlns)
+      elsif node.text?
+        process_text_node(node)
+      else
+        raise(MalformedTemplateError.new("unrecognized node type #{node.class}", @name, node))
+      end
+    end
 
-        dynamic_key = process_value(node.attr(DYNAMIC_KEY_ATTR), :attr)
+    ##
+    # Processes a document fragment node.
+    #
+    # * +node+ - Nokogiri node to process.
+    #
+    def process_fragment_node(node)
+      append("#{@assign_to}['#{@name}'] = function(htx) {")
+      @whitespace_buff = "\n"
 
-        if node.text? || node.name == CONTENT_TAG || node.name == 'htx-text' || node.name == ':'
-          if !node.text? && node.name != CONTENT_TAG
-            warn("#{@name}:#{node.line}: The <#{node.name}> tag has been deprecated. Please use "\
-              "<#{CONTENT_TAG}> for identical functionality.")
+      node.children.each do |child|
+        process(child)
+      end
+
+      append("\n}\n",)
+      flush
+    end
+
+    ##
+    # Processes an element node.
+    #
+    # * +node+ - Nokogiri node to process.
+    # * +xmlns+ - True if node is the descendent of a node with an xmlns attribute.
+    #
+    def process_element_node(node, xmlns: false)
+      children = node.children
+      childless = children.empty? || (children.size == 1 && self.class.formatting_node?(children.first))
+      dynamic_key = self.class.attribute_value(node.attr(DYNAMIC_KEY_ATTR))
+      attributes = self.class.process_attributes(node)
+      xmlns ||= !!self.class.namespace(node)
+
+      if self.class.htx_content_node?(node)
+        if node.name != CONTENT_TAG
+          warn("#{@name}:#{node.line}: The <#{node.name}> tag has been deprecated. Use <#{CONTENT_TAG}> "\
+            "for identical functionality.")
+        end
+
+        if attributes.size > 0
+          raise(MalformedTemplateError.new("<#{node.name}> tags may not have attributes other than "\
+            "#{DYNAMIC_KEY_ATTR}", @name, node))
+        elsif (child = children.find { |n| !n.text? })
+          raise(MalformedTemplateError.new("<#{node.name}> tags may not contain child tags", @name, child))
+        end
+
+        process_text_node(
+          children.first || Nokogiri::XML::Text.new('', node.document),
+          dynamic_key: dynamic_key,
+        )
+      else
+        append_htx_node(
+          "'#{self.class.tag_name(node.name)}'",
+          *attributes,
+          dynamic_key,
+          ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
+        )
+
+        unless childless
+          children.each do |child|
+            process(child, xmlns: xmlns)
           end
 
-          if (node.attributes.size - (dynamic_key ? 1 : 0)) != 0
-            raise(MalformedTemplateError.new("<#{node.name}> tags may not have attributes other than "\
-              "#{DYNAMIC_KEY_ATTR}", @name, node))
-          end
+          @close_count += 1
+        end
+      end
+    end
 
-          if (non_text_node = node.children.find { |n| !n.text? })
-            raise(MalformedTemplateError.new("<#{node.name}> tags may not contain child tags", @name,
-              non_text_node))
-          end
+    ##
+    # Processes a text node.
+    #
+    # * +node+ - Nokogiri node to process.
+    # * +dynamic_key+ - Dynamic key of the parent if it's an <htx-content> node.
+    #
+    def process_text_node(node, dynamic_key: nil)
+      content = node.content
 
-          text = (node.text? ? node : node.children).text
-
-          if (value = process_value(text))
-            append(
-              "#{indent(text[LEADING_WHITESPACE])}"\
-              "htx.node(#{[
-                value,
-                dynamic_key,
-                (@static_key += 1) << FLAG_BITS,
-              ].compact.join(', ')})"\
-              "#{indent(text[TRAILING_WHITESPACE])}"
-            )
-          else
-            append(indent(text))
-          end
+      if node.blank?
+        if !content.include?("\n")
+          append_htx_node("`#{content}`")
+        elsif node.next
+          append(content)
         else
-          childless = node.children.empty? || (node.children.size == 1 && node.children[0].text.strip == '')
-          attrs, explicit_xmlns = process_attrs(node)
-          xmlns ||= explicit_xmlns
+          @whitespace_buff = content[NEWLINE_END]
+        end
+      else
+        htx_content_node = self.class.htx_content_node?(node.parent)
+        parser = TextParser.new(content, statement_allowed: !htx_content_node)
+        parser.parse
 
-          append("htx.node(#{[
-            "'#{tag_name(node.name)}'",
-            attrs,
-            dynamic_key,
-            ((@static_key += 1) << FLAG_BITS) | ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
-          ].compact.flatten.join(', ')})")
+        append(parser.leading) unless htx_content_node
 
-          unless childless
-            process(node, xmlns: xmlns)
+        if parser.statement?
+          append(indent(parser.content))
+        elsif parser.raw?
+          append_htx_node(indent(parser.content), dynamic_key)
+        else
+          append_htx_node(parser.content, dynamic_key)
+        end
 
-            count = ''
-            @compiled.sub!(CLOSE_STATEMENT) do
-              count = $1 == '' ? 2 : $1.to_i + 1
-              $2
-            end
-
-            append("htx.close(#{count})")
-          end
+        unless htx_content_node
+          append(parser.trailing)
+          @whitespace_buff = parser.whitespace_buff
         end
       end
     end
@@ -188,17 +261,56 @@ module HTX
     # * +text+ - String to append to the compiled template string.
     #
     def append(text)
-      if @compiled == ''
-        # Do nothing.
-      elsif @compiled !~ END_STATEMENT_END && text !~ BEGIN_STATEMENT_END
-        @compiled << '; '
-      elsif @compiled !~ END_WHITESPACE && text !~ BEGIN_WHITESPACE
-        @compiled << ' '
-      elsif @compiled[-1] == "\n"
-        @compiled << @indent
+      return @compiled if text.nil? || text.empty?
+
+      if @close_count > 0
+        close_count = @close_count
+        @close_count = 0
+
+        append("htx.close(#{close_count unless close_count == 1})")
       end
 
-      @compiled << text
+      if @whitespace_buff
+        @statement_buff << @whitespace_buff
+        @whitespace_buff = nil
+        confirmed_newline = true
+      end
+
+      if (confirmed_newline || @statement_buff.match?(NEWLINE_END)) && !text.match?(NEWLINE_BEGIN)
+        @statement_buff << @indent
+      elsif !@statement_buff.match?(NO_SEMICOLON_END) && !text.match?(NO_SEMICOLON_BEGIN)
+        @statement_buff << ";#{' ' unless text.match?(WHITESPACE_BEGIN)}"
+      end
+
+      flush if text.match?(NON_WHITESPACE)
+      @statement_buff << text
+
+      @compiled
+    end
+
+    ##
+    # Appends an +htx.node+ call to the compiled template function string.
+    #
+    # * +args+ - Arguments to use for the +htx.node+ call (any +nil+ ones are removed).
+    #
+    def append_htx_node(*args)
+      return if args.first.nil?
+
+      args.compact!
+      args << 0 unless args.last.kind_of?(Integer)
+      args[-1] |= (@static_key += 1) << FLAG_BITS
+
+      append("htx.node(#{args.join(', ')})")
+    end
+
+    ##
+    # Flushes statement buffer.
+    #
+    def flush
+      @compiled << @statement_buff
+      @statement_buff.clear
+
+      @compiled
     end
 
     ##
@@ -207,102 +319,87 @@ module HTX
     # * +text+ - String of lines to indent.
     #
     def indent(text)
-      return '' unless text
-
-      text.gsub!(NEWLINE_NON_BLANK, "\n#{@indent}")
+      text.gsub!(INDENT_REGEX, "\\0#{@indent}")
       text
     end
 
     ##
-    # Processes, formats, and encodes an attribute or text node value. Returns nil if the value is
-    # determined to be a control statement.
+    # Returns true if the node is whitespace containing at least one newline.
     #
-    # * +text+ - String to process.
-    # * +is_attr+ - Truthy if the text is an attribute value.
+    # * +node+ - Nokogiri node to check.
     #
-    def process_value(text, is_attr = false)
-      return nil if text.nil? || (!is_attr && text.strip == '')
-
-      if (value = text[RAW_VALUE, 1])
-        # Entire text is enclosed in ${...}.
-        value.strip!
-        quote = false
-        escape_quotes = false
-      elsif (value = text[TEMPLATE_STRING, 1])
-        # Entire text is enclosed in backticks (template string).
-        quote = true
-        escape_quotes = false
-      elsif is_attr || text.gsub(NON_CONTROL_STATEMENT, '') !~ CONTROL_STATEMENT
-        # Text is an attribute value or doesn't match control statement pattern.
-        value = text.dup
-        quote = true
-        escape_quotes = true
-      else
-        return nil
-      end
-
-      # Strip one leading and trailing newline (and attached spaces) and perform outdent. Outdent amount
-      # calculation ignores everything before the first newline in its search for the least-indented line.
-      outdent = value.scan(NON_BLANK_NON_FIRST_LINE).min
-      value.gsub!(/#{LEADING_WHITESPACE}|#{TRAILING_WHITESPACE}|^#{outdent}/, '')
-      value.gsub!(UNESCAPED_BACKTICK, '\1\\\`') if escape_quotes
-      value.insert(0, '`').insert(-1, '`') if quote
-
-      # Ensure any Unicode characters get converted to Unicode escape sequences. Also note that since
-      # Nokogiri converts HTML entities to Unicode characters, this causes them to be properly passed to
-      # `document.createTextNode` calls as Unicode escape sequences rather than (incorrectly) as HTML
-      # entities.
-      value.encode('ascii', fallback: ->(c) { "\\u#{c.ord.to_s(16).rjust(4, '0')}" })
+    def self.formatting_node?(node)
+      node.blank? && node.content.include?("\n")
     end
 
     ##
-    # Processes a node's attributes, returning two items: a flat array of attribute names and values, and a
-    # boolean indicating whether or not an xmlns attribute is present.
+    # Returns true if the node is an <htx-content> node (or one of its now-deprecated names).
     #
-    # Note: if the node is a <math> or <svg> tag without an explicit xmlns attribute set, an appropriate one
-    # will be automatically added since it is required for those elements to render properly.
+    # * +node+ - Nokogiri node to check.
     #
-    # * +node+ - Nokogiri node to process for attributes.
-    #
-    def process_attrs(node)
-      attrs = []
-      xmlns = !!node.attributes['xmlns']
+    def self.htx_content_node?(node)
+      node && (node.name == CONTENT_TAG || node.name == 'htx-text' || node.name == ':')
+    end
 
-      if !xmlns && DEFAULT_XMLNS[node.name]
-        xmlns = true
+    ##
+    # Processes a node's attributes returning a flat array of attribute names and values.
+    #
+    # * +node+ - Nokogiri node to process the attributes of.
+    #
+    def self.process_attributes(node)
+      attributes = []
 
-        attrs << "'xmlns'"
-        attrs << process_value(DEFAULT_XMLNS[node.name], :attr)
+      if !node.attribute('xmlns') && (xmlns = namespace(node))
+        attributes.push(
+          attribute_name('xmlns'),
+          attribute_value(xmlns)
+        )
       end
 
-      node.attributes.each do |_, attr|
-        next if attr.name == DYNAMIC_KEY_ATTR
+      node.attribute_nodes.each.with_object(attributes) do |attribute, attributes|
+        next if attribute.node_name == DYNAMIC_KEY_ATTR
 
-        attrs << "'#{attr_name(attr.name)}'"
-        attrs << process_value(attr.value, :attr)
+        attributes.push(
+          attribute_name(attribute.node_name),
+          attribute_value(attribute.value)
+        )
       end
+    end
 
-      [attrs, xmlns]
+    ##
+    #
+    #
+    def self.namespace(node)
+      node.namespace&.href || DEFAULT_XMLNS[node.name]
     end
 
     ##
     # Returns the given text if the HTML5 parser is in use, or looks up the value in the tag map to get the
     # correctly-cased version, falling back to the supplied text if no mapping exists.
     #
-    # * +text+ - Tag name as returned by Nokogiri parser.
+    # * +text+ - Tag name as returned by Nokogiri.
     #
-    def tag_name(text)
-      self.class.html5_parser? ? text : (TAG_MAP[text] || text)
+    def self.tag_name(text)
+      html5_parser? ? text : (TAG_MAP[text] || text)
     end
 
     ##
     # Returns the given text if the HTML5 parser is in use, or looks up the value in the attribute map to
     # get the correctly-cased version, falling back to the supplied text if no mapping exists.
     #
-    # * +text+ - Attribute name as returned by Nokogiri parser.
+    # * +text+ - Attribute name as returned by Nokogiri.
     #
-    def attr_name(text)
-      self.class.html5_parser? ? text : (ATTR_MAP[text] || text)
+    def self.attribute_name(text)
+      "'#{html5_parser? ? text : (ATTR_MAP[text] || text)}'"
+    end
+
+    ##
+    # Returns the processed value of an attribute.
+    #
+    # * +text+ - Attribute value as returned by Nokogiri.
+    #
+    def self.attribute_value(text)
+      text ? TextParser.new(text, statement_allowed: false).parse : nil
     end
 
     # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case

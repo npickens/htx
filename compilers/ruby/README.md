@@ -20,29 +20,24 @@ gem install htx
 
 ## Usage
 
-To compile an HTX template, pass a name (conventionally the path of the template file) and template as
-strings to the `HTX.compile` method:
+To compile an HTX template, pass a name (conventionally the path of the template file) and template content
+as strings to the `HTX.compile` method (all other arguments are optional):
 
 ```ruby
-path = '/my/hot/template.htx'
+path = '/components/crew.htx'
 template = File.read(File.join('some/asset/dir', path))
 
 HTX.compile(path, template)
 
-# Or to attach to a custom object instead of `window`:
+# window['/components/crew.htx'] = function(htx) {
+#   // ...
+# }
+
 HTX.compile(path, template, assign_to: 'myTemplates')
 
-# Result:
-#
-#   window['/my/hot/template.htx'] = function(htx) {
-#     ...
-#   }
-#
-# If `assign_to` is specified:
-#
-#   myTemplates['/components/people.htx'] = function(htx) {
-#     // ...
-#   }
+# myTemplates['/components/crew.htx'] = function(htx) {
+#   // ...
+# }
 ```
 
 ## Contributing
