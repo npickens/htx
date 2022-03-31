@@ -3,7 +3,7 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.8
+ * @version 0.0.9
  */
 let HTXComponent = function() {
   let isMounting
@@ -32,7 +32,7 @@ let HTXComponent = function() {
       }
 
       renderRoot = renderRoot || this
-      this.node = htx.render()
+      this.node = this.htx.render()
 
       if (this.didRender) didRenders.push([this, initial])
       if (!isMounting && renderRoot == this) runDidRenders()

@@ -3,7 +3,7 @@
  * Copyright 2019-2022 Nate Pickens
  *
  * @license MIT
- * @version 0.0.8
+ * @version 0.0.9
  */
 let HTX = function() {
   const ELEMENT   = 1 << 0
@@ -43,7 +43,7 @@ let HTX = function() {
     render() {
       this._template.call(this._context, this)
 
-      return htx._currentNode
+      return this._currentNode
     }
 
     node(object, ...args) {
