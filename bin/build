@@ -176,7 +176,7 @@ def write_sizes
     ]
   end
 
-  File.write(SIZES_FILE, JSON.pretty_generate(data).gsub(/\[\s*(\d+),\s*(\d+)\s*\]/, '[\\1, \\2]'))
+  File.write(SIZES_FILE, "#{JSON.pretty_generate(data).gsub(/\[\s*(\d+),\s*(\d+)\s*\]/, '[\\1, \\2]')}\n")
 end
 
 ############################################################################################################
