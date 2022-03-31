@@ -62,7 +62,7 @@ module HTX
     ##
     # Compiles the HTX template.
     #
-    # * +assign_to+ - JavaScript object to assign the template function to (default: <tt>window</tt>).
+    # * +assign_to+ - JavaScript object to assign the template function to (default: +window+).
     # * +indent+ - DEPRECATED. Indentation amount (number) or string (must be only spaces or tabs but not
     #   both) to use for indentation of compiled output (default: indentation of first indented line of
     #   uncompiled template).
@@ -173,7 +173,7 @@ module HTX
     # Processes an element node.
     #
     # * +node+ - Nokogiri node to process.
-    # * +xmlns+ - True if node is the descendent of a node with an xmlns attribute.
+    # * +xmlns+ - True if node is the descendant of a node with an xmlns attribute.
     #
     def process_element_node(node, xmlns: false)
       children = node.children
@@ -369,7 +369,9 @@ module HTX
     end
 
     ##
+    # Returns namespace URL of a Nokogiri node.
     #
+    # * +node+ - Nokogiri node to get the namespace of.
     #
     def self.namespace(node)
       node.namespace&.href || DEFAULT_XMLNS[node.name]

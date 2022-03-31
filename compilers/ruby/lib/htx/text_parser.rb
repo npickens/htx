@@ -216,6 +216,8 @@ module HTX
     ##
     # Flushes buffer during parsing and performs statement detection if appropriate.
     #
+    # * +state+ - Last state that was parsed.
+    #
     def flush(state = nil)
       return if @buffer.empty?
 
