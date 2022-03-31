@@ -172,22 +172,6 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
     end
 
-    test('warns if <:> or <htx-text> tag is used instead of <htx-content>') do
-      %w[: htx-text].each do |tag|
-        name = "/deprecated-tag-#{tag}.htx"
-        uncompiled = "<#{tag}>Hello, World!</#{tag}>"
-        template = HTX::Template.new(name, uncompiled)
-        warning = nil
-
-        template.stub(:warn, ->(message) { warning = message }) do
-          template.compile
-        end
-
-        assert_equal("#{name}:1: The <#{tag}> tag has been deprecated. Use <htx-content> for identical "\
-          'functionality.', warning)
-      end
-    end
-
     test('if <htx-content> tag contains a child tag') do
       assert_raises(HTX::MalformedTemplateError) do
         HTX::Template.new(

@@ -183,11 +183,6 @@ module HTX
       xmlns ||= !!self.class.namespace(node)
 
       if self.class.htx_content_node?(node)
-        if node.name != CONTENT_TAG
-          warn("#{@name}:#{node.line}: The <#{node.name}> tag has been deprecated. Use <#{CONTENT_TAG}> "\
-            "for identical functionality.")
-        end
-
         if attributes.size > 0
           raise(MalformedTemplateError.new("<#{node.name}> tags may not have attributes other than "\
             "#{DYNAMIC_KEY_ATTR}", @name, node))
@@ -336,7 +331,7 @@ module HTX
     # * +node+ - Nokogiri node to check.
     #
     def self.htx_content_node?(node)
-      node && (node.name == CONTENT_TAG || node.name == 'htx-text' || node.name == ':')
+      node&.name == CONTENT_TAG
     end
 
     ##
