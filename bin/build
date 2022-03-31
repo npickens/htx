@@ -13,8 +13,8 @@ end
 BASE_DIR = Dir.pwd.freeze
 RUBY_DIR = File.join(BASE_DIR, 'compilers', 'ruby').freeze
 LIB_NAME = File.basename(Dir[File.join(RUBY_DIR, '*.gemspec')].first, '.gemspec').freeze
-GEMSPEC_FILES = (Dir[File.join(BASE_DIR, '*.gemspec')] +
-  Dir[File.join(BASE_DIR, "#{LIB_NAME}-*", '*.gemspec')]).freeze
+GEMSPEC_FILES = (Dir[File.join(RUBY_DIR, '*.gemspec')] +
+  Dir[File.join(RUBY_DIR, "#{LIB_NAME}-*", '*.gemspec')]).freeze
 VERSION_FILES = Dir[File.join("{#{BASE_DIR},#{RUBY_DIR}}", 'VERSION')].freeze
 VERSION_FILE_RUBY = File.join(RUBY_DIR, 'lib', LIB_NAME, 'version.rb').freeze
 TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
