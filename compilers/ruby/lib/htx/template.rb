@@ -263,7 +263,7 @@ module HTX
     # * +text+ - String to append to the compiled template string.
     #
     def append(text)
-      return @compiled if text.nil? || text.empty?
+      return if text.nil? || text.empty?
 
       if @close_count > 0
         close_count = @close_count
@@ -286,8 +286,6 @@ module HTX
 
       flush if text.match?(NON_WHITESPACE)
       @statement_buff << text
-
-      @compiled
     end
 
     ##
@@ -311,8 +309,6 @@ module HTX
     def flush
       @compiled << @statement_buff
       @statement_buff.clear
-
-      @compiled
     end
 
     ##
