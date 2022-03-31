@@ -63,11 +63,11 @@ module HTX
     # Compiles the HTX template.
     #
     # * +assign_to+ - JavaScript object to assign the template function to (default: <tt>window</tt>).
-    # * +indent+ - Indentation amount (number) or string (must be only spaces or tabs but not both) to use
-    #   for indentation of compiled output (default: indentation of first indented line of uncompiled
-    #   template).
+    # * +indent+ - DEPRECATED. Indentation amount (number) or string (must be only spaces or tabs but not
+    #   both) to use for indentation of compiled output (default: indentation of first indented line of
+    #   uncompiled template).
     #
-    def compile(assign_to: nil, indent: nil)
+    def compile(assign_to: nil, indent: (indent_omitted = true; nil))
       @assign_to = assign_to || 'window'
       @indent =
         if indent.kind_of?(Numeric)
@@ -77,6 +77,8 @@ module HTX
         else
           indent || @content[INDENT_GUESS] || INDENT_DEFAULT
         end
+
+      warn('The indent: option for HTX template compilation is deprecated.') unless indent_omitted
 
       @static_key = 0
       @close_count = 0

@@ -318,6 +318,17 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX::Template.new(name, content).compile)
     end
 
+    test('warns if indent: option is given') do
+      template = HTX::Template.new('/indent-warn.htx', '<div></div>')
+      warning = nil
+
+      template.stub(:warn, ->(message) { warning = message }) do
+        template.compile(indent: '    ')
+      end
+
+      assert_equal('The indent: option for HTX template compilation is deprecated.', warning)
+    end
+
     test('indents with X spaces if indent option is a number X') do
       name = '/indent.htx'
       content = <<~EOS
@@ -334,7 +345,10 @@ class HTXTest < Minitest::Test
         }
       EOS
 
-      assert_equal(compiled, HTX::Template.new(name, content).compile(indent: 5))
+      template = HTX::Template.new(name, content)
+      template.stub(:warn, nil) do
+        assert_equal(compiled, template.compile(indent: 5))
+      end
     end
 
     test('indents with string X if indent option is a string X') do
@@ -355,7 +369,10 @@ class HTXTest < Minitest::Test
         }
       EOS
 
-      assert_equal(compiled, HTX::Template.new(name, content).compile(indent: "\t"))
+      template = HTX::Template.new(name, content)
+      template.stub(:warn, nil) do
+        assert_equal(compiled, template.compile(indent: "\t"))
+      end
     end
 
     test('raises an error if indent option is a string containing characters other than spaces and tabs') do
