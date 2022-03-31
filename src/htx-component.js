@@ -44,7 +44,7 @@ let HTXComponent = function() {
       }
 
       renderRoot = renderRoot || this
-      this.node = htx.render()
+      this.node = this.htx.render()
 
       if (this.didRender) didRenders.push([this, initial])
       if (!isMounting && renderRoot == this) runDidRenders()
