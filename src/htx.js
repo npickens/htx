@@ -62,7 +62,7 @@ let HTX = function() {
     render() {
       this._template.call(this._context, this)
 
-      return htx._currentNode
+      return this._currentNode
     }
 
     /**
