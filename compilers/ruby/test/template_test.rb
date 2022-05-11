@@ -29,7 +29,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 'class', `crew`, 9)
             htx.node('h1', 17); htx.node(this.title, 24); htx.close()
 
@@ -69,7 +69,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 9)
             htx.node('span', 19)
           htx.close()
@@ -124,7 +124,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 9); htx.node(`Hello,  World!`, 16); htx.close()
         }
       EOS
@@ -143,7 +143,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 9)
             htx.node(`Hello,
         World!`, 16)
@@ -164,7 +164,7 @@ class HTXTest < Minitest::Test
       name = '/htx-content-empty.htx'
       uncompiled = '<htx-content></htx-content>'
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node(``, 8)
         }
       EOS
@@ -201,7 +201,7 @@ class HTXTest < Minitest::Test
         name = "/#{tag}-missing-xmlns.htx"
         content = "<#{tag}></#{tag}>"
         compiled = <<~EOS
-          window['#{name}'] = function(htx) {
+          globalThis['#{name}'] = function(htx) {
             htx.node('#{tag}', 'xmlns', `#{xmlns}`, 15)
           }
         EOS
@@ -215,7 +215,7 @@ class HTXTest < Minitest::Test
         name = "/#{tag}-xmlns.htx"
         content = "<#{tag} xmlns='explicit-xmlns'></#{tag}>"
         compiled = <<~EOS
-          window['#{name}'] = function(htx) {
+          globalThis['#{name}'] = function(htx) {
             htx.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)
           }
         EOS
@@ -234,7 +234,7 @@ class HTXTest < Minitest::Test
       name = '/empty-attribute-value.htx'
       content = "<div empty-attr></div>"
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 'empty-attr', ``, 11)
         }
       EOS
@@ -252,7 +252,7 @@ class HTXTest < Minitest::Test
       name = '/indent.htx'
       content = "<div>Hello, World!</div>"
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
           htx.node('div', 9); htx.node(`Hello, World!`, 16); htx.close()
         }
       EOS
@@ -270,7 +270,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
            htx.node('div', 9)
               htx.node(`Hello,`, 16)
                htx.node('b', 25); htx.node(`World!`, 32)
@@ -291,7 +291,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
         \thtx.node('div', 9)
         \t\thtx.node(`Hello,`, 16)
         \t\t\thtx.node('b', 25); htx.node(`World!`, 32)
@@ -322,7 +322,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
              htx.node('div', 9)
                htx.node(`Hello, World!`, 16)
              htx.close()
@@ -345,7 +345,7 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        window['#{name}'] = function(htx) {
+        globalThis['#{name}'] = function(htx) {
         \thtx.node('div', 9)
           \thtx.node(`Hello,`, 16)
           \thtx.node('b', 25); htx.node(`World!`, 32)

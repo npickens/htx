@@ -29,7 +29,7 @@ template = File.read(File.join('some/asset/dir', path))
 
 HTX.compile(path, template)
 
-# window['/components/crew.htx'] = function(htx) {
+# globalThis['/components/crew.htx'] = function(htx) {
 #   // ...
 # }
 

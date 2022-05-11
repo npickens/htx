@@ -33,7 +33,7 @@ library. The full compiled version of the above template is shown in the [Compil
 in summary it takes the following form:
 
 ```javascript
-window['/components/crew.htx'] = function(htx) {
+globalThis['/components/crew.htx'] = function(htx) {
   // ...
 }
 ```
@@ -306,14 +306,14 @@ content = File.read("/assets#{path}")
 
 HTX.compile(path, content)
 
-# Or to attach to a custom object instead of `window`:
+# Or to attach to a custom object instead of `globalThis`:
 HTX.compile(path, content, assign_to: 'myTemplates')
 ```
 
 Result:
 
 ```javascript
-window['/components/crew.htx'] = function(htx) {
+globalThis['/components/crew.htx'] = function(htx) {
   htx.node('div', 'class', `crew`, 8)
     htx.node('h1', 16); htx.node(this.title, 26); htx.close()
 

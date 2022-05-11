@@ -45,7 +45,7 @@ let HTX = function() {
      * @param context Context (`this` binding) for the template function call.
      */
     constructor(template, context) {
-      this._template = (HTX.templates || window)[template] || template
+      this._template = (HTX.templates || globalThis)[template] || template
       this._context = context
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap

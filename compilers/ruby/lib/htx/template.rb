@@ -62,13 +62,13 @@ module HTX
     ##
     # Compiles the HTX template.
     #
-    # * +assign_to+ - JavaScript object to assign the template function to (default: +window+).
+    # * +assign_to+ - JavaScript object to assign the template function to (default: +globalThis+).
     # * +indent+ - DEPRECATED. Indentation amount (number) or string (must be only spaces or tabs but not
     #   both) to use for indentation of compiled output (default: indentation of first indented line of
     #   uncompiled template).
     #
     def compile(assign_to: nil, indent: (indent_omitted = true; nil))
-      @assign_to = assign_to || 'window'
+      @assign_to = assign_to || 'globalThis'
       @indent =
         if indent.kind_of?(Numeric)
           ' ' * indent
