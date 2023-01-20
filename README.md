@@ -277,7 +277,7 @@ Example:
 <li class='member captain'>...</li>
 ```
 
-One special case is made for boolean(ish) values: if the attribute value is strictly JavaScript (no static
+A special case is made for boolean(ish) values: if the attribute value is strictly JavaScript (no static
 parts to it) and evaluates to `true`, `false`, `null`, or `undefined`, the attribute is treated as a boolean
 attribute. Example:
 
@@ -289,6 +289,21 @@ attribute. Example:
 <li class='member' selected>...</div>
 
 <!-- Result when member.selected === false, null, or undefined -->
+<li class='member'>...</div>
+```
+
+One other special case is made for `class` attributes: if the attribute value is strictly JavaScript (no
+static parts to it) and is an array, it is automatically converted to a space-separated string with only
+truthy values included. Example:
+
+```html
+<!-- Template -->
+<li class='${["member", member.selected && "selected"]'>...</div>
+
+<!-- Result when member.selected is truthy -->
+<li class='member selected'>...</div>
+
+<!-- Result when member.selected is not truthy -->
 <li class='member'>...</div>
 ```
 

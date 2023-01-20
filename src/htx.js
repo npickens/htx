@@ -125,7 +125,10 @@ let HTX = function() {
       for (let i = 0; i < args.length - 2; i += 2) {
         let k = args[i]
         let v = args[i + 1]
-        let falsey = v === false || v === null || v === undefined
+
+        if (k == 'class' && v instanceof Array) {
+          v = v.filter(Boolean).join(' ') || null
+        }
 
         // Needed in Safari to refresh the state of the parent <select> tag (setAttribute alone doesn't
         // trigger it).
@@ -133,7 +136,8 @@ let HTX = function() {
           node[k] = v
         }
 
-        falsey ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+        v === false || v === null || v === undefined ? node.removeAttribute(k) :
+          node.setAttribute(k, v === true ? '' : v)
       }
 
       if (!parentNode) {
