@@ -17,7 +17,6 @@ module HTX
       'svg' => 'http://www.w3.org/2000/svg',
     }.freeze
 
-    INDENT_VALID = /^( +|\t+)$/.freeze
     INDENT_GUESS = /^( +|\t+)(?=\S)/.freeze
     INDENT_REGEX = /\n(?=[^\n])/.freeze
 
@@ -63,23 +62,10 @@ module HTX
     # Compiles the HTX template.
     #
     # * +assign_to+ - JavaScript object to assign the template function to (default: +globalThis+).
-    # * +indent+ - DEPRECATED. Indentation amount (number) or string (must be only spaces or tabs but not
-    #   both) to use for indentation of compiled output (default: indentation of first indented line of
-    #   uncompiled template).
     #
-    def compile(assign_to: nil, indent: (indent_omitted = true; nil))
+    def compile(assign_to: nil)
       @assign_to = assign_to || 'globalThis'
-      @indent =
-        if indent.kind_of?(Numeric)
-          ' ' * indent
-        elsif indent && !indent.match?(INDENT_VALID)
-          raise("Invalid indent value #{indent.inspect}: only spaces and tabs (but not both) are allowed")
-        else
-          indent || @content[INDENT_GUESS] || INDENT_DEFAULT
-        end
-
-      warn('The indent: option for HTX template compilation is deprecated.') unless indent_omitted
-
+      @indent = @content[INDENT_GUESS] || INDENT_DEFAULT
       @static_key = 0
       @close_count = 0
       @whitespace_buff = nil

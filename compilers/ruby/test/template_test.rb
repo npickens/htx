@@ -248,7 +248,7 @@ class HTXTest < Minitest::Test
   ##########################################################################################################
 
   context(HTX::Template, '#compile') do
-    test('indents with two spaces if template has no indentation and indent option is not provided') do
+    test('indents with two spaces if template has no indentation') do
       name = '/indent.htx'
       content = "<div>Hello, World!</div>"
       compiled = <<~EOS
@@ -260,7 +260,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX::Template.new(name, content).compile)
     end
 
-    test('indents with leading space(s) of first indented line if indent option is not provided') do
+    test('indents with leading space(s) of first indented line') do
       name = '/indent.htx'
       content = <<~EOS
         <div>
@@ -281,7 +281,7 @@ class HTXTest < Minitest::Test
       assert_equal(compiled, HTX::Template.new(name, content).compile)
     end
 
-    test('indents with leading tab(s) of first indented line if indent option is not provided') do
+    test('indents with leading tab(s) of first indented line') do
       name = '/tab-indent.htx'
       content = <<~EOS
         <div>
@@ -300,75 +300,6 @@ class HTXTest < Minitest::Test
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, content).compile)
-    end
-
-    test('warns if indent: option is given') do
-      template = HTX::Template.new('/indent-warn.htx', '<div></div>')
-      warning = nil
-
-      template.stub(:warn, ->(message) { warning = message }) do
-        template.compile(indent: '    ')
-      end
-
-      assert_equal('The indent: option for HTX template compilation is deprecated.', warning)
-    end
-
-    test('indents with X spaces if indent option is a number X') do
-      name = '/indent.htx'
-      content = <<~EOS
-        <div>
-          Hello, World!
-        </div>
-      EOS
-
-      compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-             htx.node('div', 9)
-               htx.node(`Hello, World!`, 16)
-             htx.close()
-        }
-      EOS
-
-      template = HTX::Template.new(name, content)
-      template.stub(:warn, nil) do
-        assert_equal(compiled, template.compile(indent: 5))
-      end
-    end
-
-    test('indents with string X if indent option is a string X') do
-      name = '/indent.htx'
-      content = <<~EOS
-        <div>
-          Hello,
-          <b>World!</b>
-        </div>
-      EOS
-
-      compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-        \thtx.node('div', 9)
-          \thtx.node(`Hello,`, 16)
-          \thtx.node('b', 25); htx.node(`World!`, 32)
-        \thtx.close(2)
-        }
-      EOS
-
-      template = HTX::Template.new(name, content)
-      template.stub(:warn, nil) do
-        assert_equal(compiled, template.compile(indent: "\t"))
-      end
-    end
-
-    test('raises an error if indent option is a string containing characters other than spaces and tabs') do
-      assert_raises do
-        HTX::Template.new('/bad-indent-chars.htx', '<div></div>').compile(indent: ">>")
-      end
-    end
-
-    test('raises an error if indent option is a string containing both spaces and tabs') do
-      assert_raises do
-        HTX::Template.new('/bad-indent-spaces-and-tabs.htx', '<div></div>').compile(indent: " \t")
-      end
     end
   end
 end
