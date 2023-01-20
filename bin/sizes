@@ -22,7 +22,7 @@ data.each do |path, sizes|
     size_gzip = "#{(size_gzip / 1024.0).round(2)}K" if size_gzip >= 1024
 
     puts(
-      "  #{version}: "\
+      "  #{version.rjust(8)}: "\
       "\e[36m#{'=' * count_gzip}\e[39m"\
       "\e[35m#{'=' * count_norm}\e[39m"\
       " \e[36m#{size_gzip}\e[39m, \e[35m#{size_norm}\e[39m"
