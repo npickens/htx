@@ -8,35 +8,7 @@ let HTX = function() {
   const XMLNS     = 1 << 2
   const FLAG_BITS = 3
 
-  let instances = new WeakMap
-
   return class {
-    /**
-     * DEPRECATED. Create an HTX instance with `new HTX(...)` and call `render` on it instead.
-     *
-     * Calls a template function to either create a new Node or update an existing one.
-     *
-     * @param object Name of or direct reference to a template function, or Node object previously returned
-     *   by this function that needs updating.
-     * @param context Context (`this` binding) for the template function call (optional when `object` is an
-     *   existing Node being updated).
-     */
-    static render(object, context) {
-      console.warn('HTX.render is deprecated. Please use new HTX(...).render() instead.')
-
-      let htx
-
-      if (object instanceof Node) {
-        htx = instances.get(object)
-        if (!htx) throw `HTX instance not found for Node: ${object}`
-        if (context) htx._context = context
-      } else {
-        htx = new HTX(object, context)
-      }
-
-      return htx.render()
-    }
-
     /**
      * Creates a new HTX instance.
      *
@@ -165,7 +137,7 @@ let HTX = function() {
       }
 
       if (!parentNode) {
-        instances.set(node, this)
+        // Root node, so nothing to do.
       } else if (!currentNode || currentNode == parentNode) {
         parentNode.append(node)
       } else if (node != currentNode) {
