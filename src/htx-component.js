@@ -63,8 +63,8 @@ let HTXComponent = function() {
     mount(...args) {
       isMounting = true
 
-      let placement = args.find((a) => typeof a == 'string') || 'append'
-      let placementNode = args.find((a) => typeof a != 'string') || document.body
+      let placement = args.find(a => typeof a == 'string') || 'append'
+      let placementNode = args.find(a => typeof a != 'string') || document.body
 
       if (placement == 'append' || placement == 'prepend' || placement == 'before' ||
         placement == 'after' || placement == 'replace') {

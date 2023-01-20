@@ -442,7 +442,7 @@ class Crew extends HTXComponent {
     if (!initial) return
 
     let button = this.node.querySelector('.button')
-    button.addEventListener('click', (event) => { /* ... */ })
+    button.addEventListener('click', event => { /* ... */ })
   }
 }
 ```
