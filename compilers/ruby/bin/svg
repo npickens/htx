@@ -16,8 +16,8 @@ code = File.read(CODE_FILE)
 error = nil
 
 [
-  ['TAG_MAP', 'Element', 'article.main-page-content > div > ul > li > a > code'],
-  ['ATTR_MAP', 'Attribute', 'article.main-page-content > div > ul > li > code > a'],
+  ['TAG_MAP', 'Element', '.main-page-content > section > div.section-content > ul > li > a > code'],
+  ['ATTR_MAP', 'Attribute', '.main-page-content > section > div.section-content > ul > li > code > a'],
 ].each do |(const, page, selector)|
   result = code.sub!(/^( *)#{const} = [^\]]+/) do
     indent_const = $1
