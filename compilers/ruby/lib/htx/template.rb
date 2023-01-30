@@ -31,17 +31,14 @@ module HTX
     NON_WHITESPACE = /\S/.freeze
 
     ##
-    # Returns false. In the near future when support for the <:> tag has been dropped (in favor of
-    # <htx-content>), will return true if Nokogiri's HTML5 parser is available. To use it now, monkey patch
-    # this method to return true.
+    # Returns true if Nokogiri's HTML5 parser is available.
     #
     def self.html5_parser?
-      false # !!defined?(Nokogiri::HTML5)
+      defined?(Nokogiri::HTML5)
     end
 
     ##
-    # Returns Nokogiri's HTML5 parser if available and enabled, and Nokogiri's regular HTML parser
-    # otherwise.
+    # Returns Nokogiri's HTML5 parser if available or Nokogiri's default HTML (4) parser otherwise.
     #
     def self.nokogiri_parser
       html5_parser? ? Nokogiri::HTML5 : Nokogiri::HTML
@@ -165,7 +162,7 @@ module HTX
       children = node.children
       childless = children.empty? || (children.size == 1 && self.class.formatting_node?(children.first))
       dynamic_key = self.class.attribute_value(node.attr(DYNAMIC_KEY_ATTR))
-      attributes = self.class.process_attributes(node)
+      attributes = self.class.process_attributes(node, xmlns: xmlns)
       xmlns ||= !!self.class.namespace(node)
 
       if self.class.htx_content_node?(node)
@@ -325,10 +322,10 @@ module HTX
     #
     # * +node+ - Nokogiri node to process the attributes of.
     #
-    def self.process_attributes(node)
+    def self.process_attributes(node, xmlns:)
       attributes = []
 
-      if !node.attribute('xmlns') && (xmlns = namespace(node))
+      if !xmlns && !node.attribute('xmlns') && (xmlns = namespace(node))
         attributes.push(
           attribute_name('xmlns'),
           attribute_value(xmlns)
@@ -383,15 +380,10 @@ module HTX
       text ? TextParser.new(text, statement_allowed: false).parse : nil
     end
 
-    # The Nokogiri HTML parser downcases all tag and attribute names, but SVG tags and attributes are case
-    # sensitive and often mix cased. These maps are used to restore the correct case of such tags and
-    # attributes.
-    #
-    # Note: Nokogiri's newer HTML5 parser resulting from the Nokogumbo merge fixes this issue, but it is
-    # currently not available for JRuby. It also does not parse <:> as a tag, which is why it's been
-    # deprecated in favor of <htx-content>. Once support for <:> has been completely removed, the HTML5
-    # parser will be used for regular Ruby and this tag and attribute mapping hack reserved for JRuby (and
-    # any other potential environments where the HTML5 parser is not available).
+    # The Nokogiri::HTML5 parser is used whenever possible, which correctly handles mix-cased SVG tag and
+    # attribute names. But when falling back to the Nokogiri::HTML parser (e.g. in JRuby environments where
+    # Nokogiri::HTML5 is not available), all tag and attribute names get downcased. These maps are used to
+    # restore the correct case.
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Element
     TAG_MAP = %w[

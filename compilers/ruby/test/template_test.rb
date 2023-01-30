@@ -189,6 +189,34 @@ class HTXTest < Minitest::Test
   end
 
   ##########################################################################################################
+  ## Attributes - Case                                                                                    ##
+  ##########################################################################################################
+
+  context(HTX::Template, '#compile') do
+    test('maintains case of mixed-case SVG tag and attribute names when non-HTML5 parser is used') do
+      name = '/case-sensitive-svg.htx'
+
+      content = <<~EOS
+        <svg xmlns='http://www.w3.org/2000/svg'>
+          <clipPath clipPathUnits='userSpaceOnUse'></clipPath>
+        </svg>
+      EOS
+
+      compiled = <<~EOS
+        globalThis['#{name}'] = function(htx) {
+          htx.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
+            htx.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
+          htx.close()
+        }
+      EOS
+
+      HTX::Template.stub(:html5_parser?, false) do
+        assert_equal(compiled, HTX::Template.new(name, content).compile)
+      end
+    end
+  end
+
+  ##########################################################################################################
   ## Attributes - XMLNS                                                                                   ##
   ##########################################################################################################
 
