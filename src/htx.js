@@ -161,26 +161,22 @@ let HTX = function() {
      */
     close(count = 1) {
       while (count-- > 0) {
-        let currentNode = this._currentNode
-        let parentNode = this._parentNode
-
-        this._parentNode = parentNode.parentNode
-
         // If the current node is the one being closed, we did not walk into it to render any children, so
         // ensure any children that may exist from the previous render are removed.
-        if (currentNode == parentNode) {
-          while (currentNode.firstChild) {
-            currentNode.firstChild.remove()
+        if (this._currentNode == this._parentNode) {
+          while (this._currentNode.firstChild) {
+            this._currentNode.firstChild.remove()
           }
         // Otherwise the current node is the last that should exist within its parent, so ensure any nodes
         // after it that may exist from the previous render are removed.
         } else {
-          while (currentNode.nextSibling) {
-            currentNode.nextSibling.remove()
+          while (this._currentNode.nextSibling) {
+            this._currentNode.nextSibling.remove()
           }
         }
 
-        this._currentNode = parentNode
+        this._currentNode = this._parentNode
+        this._parentNode = this._parentNode.parentNode
       }
 
       if (this._staticKeys.get(this._currentNode) == 1) {
