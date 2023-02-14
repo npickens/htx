@@ -175,7 +175,7 @@ let HTX = function() {
         // Otherwise the current node is the last that should exist within its parent, so ensure any nodes
         // after it that may exist from the previous render are removed.
         } else {
-          while (currentNode && currentNode.nextSibling) {
+          while (currentNode.nextSibling) {
             currentNode.nextSibling.remove()
           }
         }
