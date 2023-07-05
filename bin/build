@@ -167,7 +167,7 @@ def javascript_comment(lib_name, minified = false)
 end
 
 def write_sizes
-  data = File.exists?(SIZES_FILE) ? JSON.parse(File.read(SIZES_FILE)) : {}
+  data = File.exist?(SIZES_FILE) ? JSON.parse(File.read(SIZES_FILE)) : {}
 
   Dir[File.join(DIST_DIR, '*.js')].sort.each do |path|
     (data[File.basename(path)] ||= {})[NEW_VERSION] = [

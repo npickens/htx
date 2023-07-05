@@ -8,7 +8,7 @@ BASE_DIR = File.dirname(__dir__).freeze
 SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
 GRAPH_WIDTH = [IO.console.winsize.last, 200].min - 30
 
-data = JSON.parse(File.exists?(SIZES_FILE) ? File.read(SIZES_FILE) : '{}')
+data = JSON.parse(File.exist?(SIZES_FILE) ? File.read(SIZES_FILE) : '{}')
 max_value = data.map { |path, sizes| sizes.values }.flatten.max
 
 data.each do |path, sizes|
