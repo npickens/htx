@@ -130,8 +130,8 @@ let HTX = function() {
           v = v.filter(Boolean).join(' ') || null
         }
 
-        // Needed in Safari to refresh the state of the parent <select> tag (setAttribute alone doesn't
-        // trigger it).
+        // Needed in (non-latest versions of) Safari to refresh the state of the parent <select> tag
+        // (setAttribute alone doesn't trigger it).
         if (node.tagName == 'OPTION' && k == 'selected') {
           node[k] = v
         }
