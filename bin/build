@@ -51,14 +51,14 @@ DEPRECATIONS = {
   'Renderer' => <<~JS,
     globalThis.HTX = Object.assign(function(template, context) {
       return globalThis.HTX.Renderer.templateResolver(template, context)
-    }, globalThis.HTX ||= {})
+    }, globalThis.HTX ||= {});
 
     const HTX = new Proxy(globalThis.HTX, {
       get(target, property, receiver) {
         console.warn('DEPRECATED: Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
         return target[property]
       }
-    })
+    });
   JS
 
   'Component' => <<~JS,
@@ -70,7 +70,7 @@ DEPRECATIONS = {
 
         return target[property]
       }
-    })
+    });
   JS
 }.freeze
 
@@ -168,7 +168,7 @@ def build_javascript
       content.concat("\n#{full_lib_name} = #{lib_name}\n")
       content.gsub!(/^(?!\n)/, '  ')
 
-      content.prepend(javascript_comment(full_lib_name) + ";((HTX) => {\n")
+      content.prepend(javascript_comment(full_lib_name) + "((HTX) => {\n")
       content.concat("})(globalThis.HTX ||= {});\n\n")
       content.concat(DEPRECATIONS[lib_name])
 
