@@ -178,7 +178,9 @@ def build_javascript
     end
 
     task(command: "npx terser #{dist_file} -c --comments /^$/ --mangle-props regex=/^_.*/ --format "\
-      "\"preamble='#{javascript_comment(full_lib_name, :minified)}'\" --output #{dist_file_min}")
+      "\"preamble='#{javascript_comment(full_lib_name, :minified)}'\" --output #{dist_file_min} && "\
+      "echo '' >> #{dist_file_min}")
+
 
     [dist_file, dist_file_min].each do |output_file|
       (sizes[File.basename(output_file)] ||= {})[NEW_VERSION] = [
