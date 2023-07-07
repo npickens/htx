@@ -288,9 +288,9 @@ module HTX
     end
 
     ##
-    # Appends an +htx.node+ call to the compiled template function string.
+    # Appends an +$rndr.node+ call to the compiled template function string.
     #
-    # * +args+ - Arguments to use for the +htx.node+ call (any +nil+ ones are removed).
+    # * +args+ - Arguments to use for the +$rndr.node+ call (any +nil+ ones are removed).
     #
     def append_htx_node(*args)
       return if args.first.nil?
