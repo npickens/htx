@@ -28,18 +28,25 @@ Syntax](#template-syntax) section for the full spec):
 </div>
 ```
 
-An HTX template gets compiled to a JavaScript function consisting of calls to the (very tiny) HTX JavaScript
-library. The full compiled version of the above template is shown in the [Compiler](#compiler) section, but
-in summary it takes the following form:
+An HTX template gets compiled to a JavaScript function consisting of calls to the (very tiny) HTX.Renderer
+JavaScript library. The full compiled version of the above template is shown in the [Compiler](#compiler)
+section, but in summary it takes the following form:
 
 ```javascript
-globalThis['/components/crew.htx'] = function(htx) {
-  // ...
-}
+globalThis['/components/crew.htx'] = ((HTX) => {
+  function render($rndr) {
+    // ...
+  }
+
+  return function Template(context) {
+    this.render = render.bind(context, new HTX.Renderer)
+  }
+})(globalThis.HTX ||= {});
 ```
 
-The HTX library leverages this function to both generate a brand new DOM fragment and update an existing
-one:
+A template should be passed a context (`this` binding) upon instantiation. A template instance provides just
+a simple `render` function, which produces a DOM fragment the first time it is called and updates that
+fragment on subsequent calls:
 
 ```javascript
 let crew = {
@@ -51,17 +58,16 @@ let crew = {
   ],
 }
 
-// The constructor takes the name of or direct reference to a template function and a context
-// (`this` binding) to use whenever the template function is called.
-let htx = new HTX('/components/crew.htx', crew)
+// The constructor argument provides the `this` binding used within the template.
+let crewView = new globalThis['/components/crew.htx'](crew)
 
 // The `render` function returns a standard Node object.
-document.body.append(htx.render())
+document.body.append(crewView.render())
 
 // Subsequent calls re-render the existing Node, in this case refreshing it to reflect the
 // current state of the `crew` object.
 crew.members.push({role: 'pilot', name: 'Wash'})
-htx.render()
+crewView.render()
 ```
 
 The result:
@@ -81,8 +87,8 @@ The result:
 
 ## HTX Versus JSX
 
-For those familiar with JSX, think of HTX as the reverse: instead of embedding HTML syntax within
-JavaScript, JavaScript is embedded within HTML. Syntax aside, HTX has two key advantages over JSX:
+HTX is like the reverse of JSX: instead of embedding HTML syntax within JavaScript, JavaScript is embedded
+within HTML. Syntax aside, HTX has two key advantages over JSX:
 
 1. **HTX DOM updates are both faster and more memory efficient than those of JSX.** HTX leverages the DOM
    directly to track changes and perform updates. There is no virtual DOM.  See the [JavaScript
@@ -94,8 +100,8 @@ JavaScript, JavaScript is embedded within HTML. Syntax aside, HTX has two key ad
 
 ## Template Syntax
 
-As stated above, HTX templates are HTML documents with JavaScript syntax inserted for control flow and to
-render dynamic content.
+HTX templates are HTML documents with JavaScript syntax inserted for control flow and to render dynamic
+content.
 
 ### Control Flow
 
@@ -313,7 +319,7 @@ The HTX compiler is written in Ruby. That being said, since HTX templates are va
 to other languages should be fairly straightforward considering an HTML parsing library can be leveraged to
 do the bulk of the heavy lifting (as is the case with the Ruby compiler, which leverages Nokogiri).
 
-Calling the compiler is simple:
+Compile a template:
 
 ```ruby
 path = '/components/crew.htx'
@@ -328,44 +334,49 @@ HTX.compile(path, content, assign_to: 'myTemplates')
 Result:
 
 ```javascript
-globalThis['/components/crew.htx'] = function(htx) {
-  htx.node('div', 'class', `crew`, 8)
-    htx.node('h1', 16); htx.node(this.title, 26); htx.close()
+globalThis['/components/crew.htx'] = ((HTX) => {
+  function render($rndr) {
+    $rndr.node('div', 'class', `crew`, 9)
+      $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
 
-    htx.node('ul', 'class', `members`, 32)
-      for (let member of this.members) {
-        htx.node('li', 'class', `member ${member.role}`, 40)
-          htx.node(member.name, 50)
-        htx.close()
-      }
-  htx.close(2)
-}
+      $rndr.node('ul', 'class', `members`, 33)
+        for (let member of this.member) {
+          $rndr.node('li', 'class', `member ${member.role}`, 41)
+            $rndr.node(member.name, 48)
+          $rndr.close()
+        }
+    $rndr.close(2)
+
+    return $rndr.rootNode
+  }
+
+  return function Template(context) {
+    this.render = render.bind(context, new HTX.Renderer)
+  }
+})(globalThis.HTX ||= {});
 
 // If `assign_to` is specified:
-myTemplates['/components/crew.htx'] = function(htx) {
-  // ...
-}
+myTemplates['/components/crew.htx'] = // ...
 ```
 
-(Note: if the `assign_to` compile option is specified, set `HTX.templates = myTemplates` before rendering
-any templates so HTX knows where to look for compiled template functions.)
-
-Every compiled template function is just a series of calls to the HTX JavaScript library, with any control
+A compiled template function is just a series of calls to an `HTX.Renderer` instance, with any control
 statements from the template inserted appropriately. See the [JavaScript Library](#javascript-library)
-section for details on how it works.
+section for details.
 
-As stated previously, it is important to always use curly braces for control statements, even if they seem
-optional when writing the template. Even though the `for` loop in the uncompiled template only contains one
-child/tag, note that it turns into three lines of code in the compiled function.
+**IMPORTANT NOTE (AGAIN):** It is important to always use curly braces for control statements, even if they
+seem optional when writing the template. Even though the `for` loop in the uncompiled template only contains
+one child/tag, note that it turns into three lines of code in the compiled function.
 
 ## JavaScript Library
+
+### How It Works
 
 The magic behind HTX's efficient DOM management lies in the assignment of an incrementing integer key to
 each potential node that can be rendered. This key is internally referred to as the 'static' key (while the
 optional user-provided key of loop-generated content is the 'dynamic' key). HTX updates the DOM by walking
 the DOM tree and examining each node's static key to determine which nodes should be added or removed.
 
-This is best shown with an example. Consider the following template:
+Consider the following template:
 
 ```html
 <div> <!-- key = 1 -->
@@ -377,9 +388,9 @@ This is best shown with an example. Consider the following template:
 </div>
 ```
 
-The comment next to each node shows the key assigned to it by the compiler (passed to the `htx.node` call
-for that particular node), which is associated with the resulting DOM node object via a WeakMap. Suppose
-`this.shuttleCount` is 1 on the first rendering of this template:
+The comment next to each node shows the key assigned to it by the compiler (passed to the `Renderer`
+instance's `node` call for that particular node), which is associated with the resulting DOM node object via
+a WeakMap. Suppose `this.shuttleCount` is 1 on the first rendering of this template:
 
 ```html
 <div> <!-- key = 1 -->
@@ -387,8 +398,8 @@ for that particular node), which is associated with the resulting DOM node objec
 </div>
 ```
 
-Now suppose `this.shuttleCount` has changed to 2 and the template function is called again to refresh the
-existing DOM. The HTX JavaScript library will walk the existing DOM tree and make modifications as follows:
+Then `this.shuttleCount` gets changed to 2. If the template instance's `render` function is then called
+again to refresh the DOM, it will walk the existing DOM fragment and make modifications as follows:
 
 1. The first node to be rendered is the parent `<div>` with a key of 1. It already exists, so we walk to the
    next node in the tree: the child `<div>` with key 2.
@@ -403,16 +414,22 @@ removed.
 For text content and attribute values, the existing values in the DOM are updated with the current values as
 the tree is walked.
 
-## HTX Component
+### HTX.Renderer
 
-The HTX Component JavaScript library is a small and optional part of HTX. It provides a simple
-`HTXComponent` class designed to be extended by various component classes. The constructor takes the name of
-the HTX template function to be used by the component.
+The `HTX.Renderer` class is the core of the HTX JavaScript library and the only part that is actually
+required. It is used by compiled template functions to render themselves as described in the previous
+section.
+
+### HTX.Component
+
+The `HTX.Component` class is a small and optional part of HTX, serving as a base class designed to be
+extended by various component classes. The constructor takes the an HTX template function to be used by the
+component.
 
 ```javascript
-class Crew extends HTXComponent {
+class Crew extends HTX.Component {
   constructor() {
-    super('/components/crew.htx')
+    super(globalThis['/components/crew.htx'])
 
     this.members = [
       {role: 'captain', name: 'Mal'},
@@ -445,9 +462,8 @@ crew.members.push({role: 'pilot', name: 'Wash'})
 crew.render()
 ```
 
-An optional `didRender` function can be implemented by the child component class, which will be called
-whenever a render occurs. It is passed one argument that is `true` on the initial rendering and `false`
-thereafter.
+An optional `didRender` function can be implemented, which will be called whenever a render occurs. It is
+passed one argument that is `true` on the initial rendering and `false` thereafter.
 
 ```javascript
 class Crew extends HTXComponent {
@@ -464,26 +480,26 @@ class Crew extends HTXComponent {
 
 ## Performance
 
-As stated previously, HTX is both faster and more memory efficient than JSX. Instead of building a virtual
-DOM and diff-ing it against the real DOM, HTX walks the actual DOM and updates it on the fly. Doing so is
-very performant and has almost no memory overhead.
+**NOTE**: Performance has not been reassessed since a very early version of the HTX library. Stats may
+differ now. The following was at one time true and is _possibly_ still true:
 
-Performance has been measured with an adaptation of the DBMonster web app. The average of 10 runs each
-running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows:
-
-(**NOTE**: Performance has not been reassessed since a very early version of the HTX library. Stats may
-differ now.)
-
-| Metric                | JSX   | HTX   | HTX Improvement |
-|-----------------------|-------|-------|-----------------|
-| numAnimationFrames    | 179.4 | 225.5 | 26% faster      |
-| numFramesSentToScreen | 179.4 | 225.5 | 26% faster      |
-| droppedFrameCount     | 349.3 | 279.4 | 20% fewer       |
-| meanFrameTime_raf     | 48.85 | 37.16 | 24% shorter     |
-| framesPerSec_raf      | 20.47 | 26.92 | 32% more        |
-| firstPaint            | 954.3 | 202.7 | 79% faster      |
-| loadTime              | 846.6 | 88.9  | 89% faster      |
-| domReadyTime          | 147.4 | 46.7  | 68% faster      |
-| readyStart            | 3.2   | 1.7   | 47% faster      |
-| requestTime           | 2.3   | 1.8   | 22% faster      |
-| initDomTreeTime       | 696.9 | 40.4  | 94% faster      |
+> HTX is both faster and more memory efficient than JSX. Instead of building a virtual DOM and diff-ing it
+> against the real DOM, HTX walks the actual DOM and updates it on the fly. Doing so is very performant and
+> has almost no memory overhead.
+>
+> Performance has been measured with an adaptation of the DBMonster web app. The average of 10 runs each
+> running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows:
+>
+>  | Metric                | JSX   | HTX   | HTX Improvement |
+>  |-----------------------|-------|-------|-----------------|
+>  | numAnimationFrames    | 179.4 | 225.5 | 26% faster      |
+>  | numFramesSentToScreen | 179.4 | 225.5 | 26% faster      |
+>  | droppedFrameCount     | 349.3 | 279.4 | 20% fewer       |
+>  | meanFrameTime_raf     | 48.85 | 37.16 | 24% shorter     |
+>  | framesPerSec_raf      | 20.47 | 26.92 | 32% more        |
+>  | firstPaint            | 954.3 | 202.7 | 79% faster      |
+>  | loadTime              | 846.6 | 88.9  | 89% faster      |
+>  | domReadyTime          | 147.4 | 46.7  | 68% faster      |
+>  | readyStart            | 3.2   | 1.7   | 47% faster      |
+>  | requestTime           | 2.3   | 1.8   | 22% faster      |
+>  | initDomTreeTime       | 696.9 | 40.4  | 94% faster      |

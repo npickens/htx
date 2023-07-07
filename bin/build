@@ -21,8 +21,12 @@ TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze
-ALL_FILE = File.join(DIST_DIR, "#{LIB_NAME}-all.js").freeze
 SIZES_FILE = File.join(BASE_DIR, 'sizes.json').freeze
+PUBLISH = {
+  'Renderer'  => %w[renderer.js  htx-renderer.js  htx-renderer.min.js],
+  'Component' => %w[component.js htx-component.js htx-component.min.js],
+  'HTX'       => %w[htx.js       htx.js           htx.min.js],
+}.freeze
 
 COPYRIGHT = File.readlines(File.join(BASE_DIR, 'LICENSE')).first.strip
 OLD_VERSION = File.read(VERSION_FILES.first).strip.freeze
@@ -35,41 +39,67 @@ NEW_VERSION =
   end
 
 DEPENDENCIES = [
-  {name: 'Terser', cmd_check: 'which terser', cmd_install: 'npm install -g terser'}.freeze,
-  {name: 'NPM', cmd_check: 'which npm', cmd_install: 'brew install npm'}.freeze,
-  {name: 'Homebrew', cmd_check: 'which brew', cmd_install: '/bin/bash -c "$(curl -fsSL '\
-    'https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"'}.freeze,
-  {name: 'Ruby gems', cmd_check: "cd #{RUBY_DIR} && bundle check", cmd_install: "cd #{RUBY_DIR} && " +
-    'bundle install'},
+  ['Homebrew',  'which brew || which npm',        '/bin/bash -c "$(curl -fsSL '\
+    'https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"'].freeze,
+  ['NPM',       'which npm',                      'brew install npm'].freeze,
+  ['NPX',       'which npx',                      'npm install -g npx'].freeze,
+  ['Terser',    'npx -c "which terser"',          'npm install terser --no-save'].freeze,
+  ['Ruby Gems', "cd #{RUBY_DIR} && bundle check", "cd #{RUBY_DIR} && bundle install"].freeze,
 ].freeze
+
+DEPRECATIONS = {
+  'Renderer' => <<~JS,
+    globalThis.HTX = Object.assign(function(template, context) {
+      return globalThis.HTX.Renderer.templateResolver(template, context)
+    }, globalThis.HTX ||= {})
+
+    const HTX = new Proxy(globalThis.HTX, {
+      get(target, property, receiver) {
+        console.warn('DEPRECATED: Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
+        return target[property]
+      }
+    })
+  JS
+
+  'Component' => <<~JS,
+    const HTXComponent = new Proxy(globalThis.HTX.Component, {
+      get(target, property, receiver) {
+        if (property == 'prototype') {
+          console.warn('DEPRECATED: HTXComponent has been deprecated in favor of globalThis.HTX.Component')
+        }
+
+        return target[property]
+      }
+    })
+  JS
+}.freeze
 
 ############################################################################################################
 ## Tasks                                                                                                  ##
 ############################################################################################################
 
 def install_dependencies
-  missing = DEPENDENCIES.each_with_object([]) do |info, missing|
-    `#{info[:cmd_check]} 2>&1`
-    $?.exitstatus == 0 ? next : missing.unshift(info)
+  install = DEPENDENCIES.select do |_, check_command, __|
+    `#{check_command.gsub(/&&|\|\||$/, '\0>/dev/null 2>&1')}`
+    $?.exitstatus != 0
   end
 
-  if missing.empty?
+  if install.empty?
     finish_task('Dependencies are installed')
-    return
-  end
+  else
+    begin_task('Some dependencies need to be installed')
 
-  begin_task('Some dependencies need to be installed')
+    print("Install #{install.map(&:first).join(', ')}? (y/n) ")
+    finish_task(1) if gets.strip.downcase != 'y'
 
-  print("Install #{missing.map { |l| l[:name] }.join(', ')}? (y/n) ")
-  finish_task(1) if gets.strip.downcase != 'y'
-
-  missing.each do |info|
-    task(
-      preamble: "Installing #{info[:name]}...",
-      command: info[:cmd_install],
-      success: "#{info[:name]} installed successfully",
-      failure: "#{info[:name]} installation failed",
-    )
+    install.each do |name, _, install_command|
+      task(
+        preamble: "Installing #{name}...",
+        command: install_command,
+        success: "#{name} installed successfully",
+        failure: "#{name} installation failed",
+      )
+    end
   end
 end
 
@@ -112,42 +142,53 @@ end
 def build_javascript
   begin_task('Building JavaScript files...')
 
+  sizes = File.exist?(SIZES_FILE) ? JSON.parse(File.read(SIZES_FILE)) : {}
+  all = []
+
   FileUtils.mkdir_p(DIST_DIR)
 
-  src_files = Dir.glob(File.join(SRC_DIR, '*.js')).sort_by(&:size)
-  src_files.each { |src_file| build_javascript_file(src_file) }
-  build_javascript_file(*src_files)
+  PUBLISH.each do |lib_name, (src_file, dist_file, dist_file_min)|
+    full_lib_name = lib_name
+    src_file = File.join(SRC_DIR, src_file)
+    dist_file = File.join(DIST_DIR, dist_file)
+    dist_file_min = File.join(DIST_DIR, dist_file_min)
 
-  finish_task('JavaScript files built')
-end
-
-def build_javascript_file(*src_files)
-  all = src_files.size > 1
-  dist_file = all ? ALL_FILE : src_files.first.sub(SRC_DIR, DIST_DIR)
-  dist_file_min = dist_file.sub(/\.js$/, '.min.js')
-
-  lib_names = []
-  unminified = []
-
-  src_files.each do |src_file|
     content = File.read(src_file)
-    lib_name = content[/^(let|class) (\w+)/, 2]
 
-    content.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
-    content.gsub!(/^ *\/\/.*\n/, '')
-    content.prepend(javascript_comment(lib_name))
+    if lib_name == 'HTX'
+      File.write(dist_file, all.join("\n"))
+    else
+      full_lib_name = "HTX.#{lib_name}"
 
-    lib_names << lib_name
-    unminified << content
+      content.sub!(/^export ((const|let|function|class) #{lib_name})/, '\\1')
+      content.gsub!(/^import .*\n/, '')
+      content.gsub!(/^ *\/\*(.*?)\*\/\n/m, '')
+      content.gsub!(/^ *\/\/.*\n/, '')
+      content.lstrip!
+      content.concat("\n#{full_lib_name} = #{lib_name}\n")
+      content.gsub!(/^(?!\n)/, '  ')
+
+      content.prepend(javascript_comment(full_lib_name) + ";((HTX) => {\n")
+      content.concat("})(globalThis.HTX ||= {});\n\n")
+      content.concat(DEPRECATIONS[lib_name])
+
+      all << content
+
+      File.write(dist_file, content)
+    end
+
+    task(command: "npx terser #{dist_file} -c --comments /^$/ --mangle-props regex=/^_.*/ --format "\
+      "\"preamble='#{javascript_comment(full_lib_name, :minified)}'\" --output #{dist_file_min}")
+
+    [dist_file, dist_file_min].each do |output_file|
+      (sizes[File.basename(output_file)] ||= {})[NEW_VERSION] = [
+        `wc -c #{output_file}`.strip.to_i,
+        `gzip -c #{output_file} | wc -c`.strip.to_i,
+      ]
+    end
   end
 
-  lib_names = lib_names.join(', ')
-  unminified = unminified.join("\n")
-
-  File.write(dist_file, unminified)
-
-  task(command: "terser #{src_files.join(' ')} -c --comments /^$/ --mangle-props regex=/^_.*/ --format "\
-    "\"preamble='#{javascript_comment(lib_names, :minified)}'\" --output #{dist_file_min}")
+  finish_task('JavaScript files built')
 end
 
 def javascript_comment(lib_name, minified = false)

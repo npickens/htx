@@ -62,7 +62,7 @@ module HTX
     #
     def compile(assign_to: nil)
       @assign_to = assign_to || 'globalThis'
-      @indent = @content[INDENT_GUESS] || INDENT_DEFAULT
+      @base_indent = @indent = @content[INDENT_GUESS] || INDENT_DEFAULT
       @static_key = 0
       @close_count = 0
       @whitespace_buff = nil
@@ -141,14 +141,35 @@ module HTX
     # * +node+ - Nokogiri node to process.
     #
     def process_fragment_node(node)
-      append("#{@assign_to}['#{@name}'] = function(htx) {")
-      @whitespace_buff = "\n"
+      append(
+        <<~JS
+          #{@assign_to}['#{@name}'] = ((HTX) => {
+          #{@indent}function render($rndr) {
+        JS
+      )
+
+      @indent = @base_indent * 2
 
       node.children.each do |child|
         process(child)
       end
 
-      append("\n}\n",)
+      append("\n\n#{@indent}return $rndr.rootNode")
+
+      @indent = @base_indent
+
+      append(
+        +<<~JS
+
+          #{@indent}}
+
+          #{@indent}return function Template(context) {
+          #{@indent * 2}this.render = render.bind(context, new HTX.Renderer)
+          #{@indent}}
+          })(globalThis.HTX ||= {});
+        JS
+      )
+
       flush
     end
 
@@ -247,7 +268,7 @@ module HTX
         close_count = @close_count
         @close_count = 0
 
-        append("htx.close(#{close_count unless close_count == 1})")
+        append("$rndr.close(#{close_count unless close_count == 1})")
       end
 
       if @whitespace_buff
@@ -278,7 +299,7 @@ module HTX
       args << 0 unless args.last.kind_of?(Integer)
       args[-1] |= (@static_key += 1) << FLAG_BITS
 
-      append("htx.node(#{args.join(', ')})")
+      append("$rndr.node(#{args.join(', ')})")
     end
 
     ##

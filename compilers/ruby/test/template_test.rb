@@ -29,18 +29,26 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 'class', `crew`, 9)
-            htx.node('h1', 17); htx.node(this.title, 24); htx.close()
+        globalThis['/crew.htx'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 'class', `crew`, 9)
+              $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
 
-            htx.node('ul', 'class', `members`, 33)
-              for (let member of this.members) {
-                htx.node('li', 'class', `member ${member.role}`, 41)
-                  htx.node(member.name, 48)
-                htx.close()
-              }
-          htx.close(2)
-        }
+              $rndr.node('ul', 'class', `members`, 33)
+                for (let member of this.members) {
+                  $rndr.node('li', 'class', `member ${member.role}`, 41)
+                    $rndr.node(member.name, 48)
+                  $rndr.close()
+                }
+            $rndr.close(2)
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
@@ -48,14 +56,23 @@ class HTXTest < Minitest::Test
 
     test('assigns compiled template function to a custom object if assign_to option is specified') do
       name = '/assign-to.htx'
+      assign_to = 'customObject'
       uncompiled = '<div></div>'
       compiled = <<~EOS
-        customObject['#{name}'] = function(htx) {
-          htx.node('div', 11)
-        }
+        #{assign_to}['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 11)
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile(assign_to: 'customObject'))
+      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile(assign_to: assign_to))
     end
 
     test('treats tags with only whitespace text as childless') do
@@ -69,11 +86,19 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 9)
-            htx.node('span', 19)
-          htx.close()
-        }
+        globalThis['/whitespace-childless.htx'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 9)
+              $rndr.node('span', 19)
+            $rndr.close()
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
@@ -124,9 +149,17 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 9); htx.node(`Hello,  World!`, 16); htx.close()
-        }
+        globalThis['/comment.htx'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 9); $rndr.node(`Hello,  World!`, 16); $rndr.close()
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
@@ -143,12 +176,20 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 9)
-            htx.node(`Hello,
+        globalThis['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 9)
+              $rndr.node(`Hello,
         World!`, 16)
-          htx.close()
-        }
+            $rndr.close()
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
@@ -164,9 +205,17 @@ class HTXTest < Minitest::Test
       name = '/htx-content-empty.htx'
       uncompiled = '<htx-content></htx-content>'
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node(``, 8)
-        }
+        globalThis['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node(``, 8)
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
@@ -203,11 +252,19 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
-            htx.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
-          htx.close()
-        }
+        globalThis['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
+              $rndr.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
+            $rndr.close()
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       HTX::Template.stub(:html5_parser?, false) do
@@ -229,9 +286,17 @@ class HTXTest < Minitest::Test
         name = "/#{tag}-missing-xmlns.htx"
         content = "<#{tag}></#{tag}>"
         compiled = <<~EOS
-          globalThis['#{name}'] = function(htx) {
-            htx.node('#{tag}', 'xmlns', `#{xmlns}`, 15)
-          }
+          globalThis['#{name}'] = ((HTX) => {
+            function render($rndr) {
+              $rndr.node('#{tag}', 'xmlns', `#{xmlns}`, 15)
+
+              return $rndr.rootNode
+            }
+
+            return function Template(context) {
+              this.render = render.bind(context, new HTX.Renderer)
+            }
+          })(globalThis.HTX ||= {});
         EOS
 
         assert_equal(compiled, HTX::Template.new(name, content).compile)
@@ -243,9 +308,17 @@ class HTXTest < Minitest::Test
         name = "/#{tag}-xmlns.htx"
         content = "<#{tag} xmlns='explicit-xmlns'></#{tag}>"
         compiled = <<~EOS
-          globalThis['#{name}'] = function(htx) {
-            htx.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)
-          }
+          globalThis['#{name}'] = ((HTX) => {
+            function render($rndr) {
+              $rndr.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)
+
+              return $rndr.rootNode
+            }
+
+            return function Template(context) {
+              this.render = render.bind(context, new HTX.Renderer)
+            }
+          })(globalThis.HTX ||= {});
         EOS
 
         assert_equal(compiled, HTX::Template.new(name, content).compile)
@@ -262,9 +335,17 @@ class HTXTest < Minitest::Test
       name = '/empty-attribute-value.htx'
       content = "<div empty-attr></div>"
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 'empty-attr', ``, 11)
-        }
+        globalThis['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 'empty-attr', ``, 11)
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, content).compile)
@@ -280,9 +361,17 @@ class HTXTest < Minitest::Test
       name = '/indent.htx'
       content = "<div>Hello, World!</div>"
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-          htx.node('div', 9); htx.node(`Hello, World!`, 16); htx.close()
-        }
+        globalThis['#{name}'] = ((HTX) => {
+          function render($rndr) {
+            $rndr.node('div', 9); $rndr.node(`Hello, World!`, 16); $rndr.close()
+
+            return $rndr.rootNode
+          }
+
+          return function Template(context) {
+            this.render = render.bind(context, new HTX.Renderer)
+          }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, content).compile)
@@ -298,12 +387,20 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-           htx.node('div', 9)
-              htx.node(`Hello,`, 16)
-               htx.node('b', 25); htx.node(`World!`, 32)
-           htx.close(2)
-        }
+        globalThis['#{name}'] = ((HTX) => {
+           function render($rndr) {
+              $rndr.node('div', 9)
+                 $rndr.node(`Hello,`, 16)
+                  $rndr.node('b', 25); $rndr.node(`World!`, 32)
+              $rndr.close(2)
+
+              return $rndr.rootNode
+           }
+
+           return function Template(context) {
+              this.render = render.bind(context, new HTX.Renderer)
+           }
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, content).compile)
@@ -319,12 +416,20 @@ class HTXTest < Minitest::Test
       EOS
 
       compiled = <<~EOS
-        globalThis['#{name}'] = function(htx) {
-        \thtx.node('div', 9)
-        \t\thtx.node(`Hello,`, 16)
-        \t\t\thtx.node('b', 25); htx.node(`World!`, 32)
-        \thtx.close(2)
-        }
+        globalThis['#{name}'] = ((HTX) => {
+        \tfunction render($rndr) {
+        \t\t$rndr.node('div', 9)
+        \t\t\t$rndr.node(`Hello,`, 16)
+        \t\t\t\t$rndr.node('b', 25); $rndr.node(`World!`, 32)
+        \t\t$rndr.close(2)
+
+        \t\treturn $rndr.rootNode
+        \t}
+
+        \treturn function Template(context) {
+        \t\tthis.render = render.bind(context, new HTX.Renderer)
+        \t}
+        })(globalThis.HTX ||= {});
       EOS
 
       assert_equal(compiled, HTX::Template.new(name, content).compile)
