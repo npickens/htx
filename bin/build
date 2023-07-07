@@ -168,7 +168,7 @@ def build_javascript
       content.concat("\n#{full_lib_name} = #{lib_name}\n")
       content.gsub!(/^(?!\n)/, '  ')
 
-      content.prepend(javascript_comment(full_lib_name) + "((HTX) => {\n")
+      content.prepend(javascript_comment(full_lib_name) + "(HTX => {\n")
       content.concat("})(globalThis.HTX ||= {});\n\n")
       content.concat(DEPRECATIONS[lib_name])
 
