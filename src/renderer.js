@@ -29,8 +29,8 @@ export class Renderer {
       refStr = templateFcn ? (templateFcn.name || '<anonymousFunction>') : 'undefined'
     }
 
-    !isComponent && console.warn('DEPRECATED: new HTX(...) is deprecated. Instantiate template directly ' +
-      `instead: new ${refStr}(context)`)
+    !isComponent && console.warn('DEPRECATED: new HTX(...) is deprecated. Instantiate the template ' +
+      `directly instead: new ${refStr}(context)`)
 
     if (!templateFcn) throw `Template not found: ${template}`
     return new templateFcn(context)
