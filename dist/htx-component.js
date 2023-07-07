@@ -1,11 +1,11 @@
 /**
- * HTXComponent
- * Copyright 2019-2022 Nate Pickens
+ * HTX.Component
+ * Copyright 2019-2023 Nate Pickens
  *
  * @license MIT
- * @version 0.0.9
+ * @version 0.1.0
  */
-let HTXComponent = function() {
+(HTX => {
   let isMounting
   let renderRoot
   let didRenders = []
@@ -19,9 +19,9 @@ let HTXComponent = function() {
     }
   }
 
-  return class {
-    constructor(htxPath) {
-      this.htx = new HTX(htxPath, this)
+  class Component {
+    constructor(template) {
+      this.template = HTX.Renderer.templateResolver(template, this, true)
     }
 
     render() {
@@ -32,7 +32,7 @@ let HTXComponent = function() {
       }
 
       renderRoot = renderRoot || this
-      this.node = this.htx.render()
+      this.node = this.template.render()
 
       if (this.didRender) didRenders.push([this, initial])
       if (!isMounting && renderRoot == this) runDidRenders()
@@ -43,8 +43,8 @@ let HTXComponent = function() {
     mount(...args) {
       isMounting = true
 
-      let placement = args.find((a) => typeof a == 'string') || 'append'
-      let placementNode = args.find((a) => typeof a != 'string') || document.body
+      let placement = args.find(a => typeof a == 'string') || 'append'
+      let placementNode = args.find(a => typeof a != 'string') || document.body
 
       if (placement == 'append' || placement == 'prepend' || placement == 'before' ||
         placement == 'after' || placement == 'replace') {
@@ -57,4 +57,16 @@ let HTXComponent = function() {
       runDidRenders()
     }
   }
-}()
+
+  HTX.Component = Component
+})(globalThis.HTX ||= {});
+
+const HTXComponent = new Proxy(globalThis.HTX.Component, {
+  get(target, property, receiver) {
+    if (property == 'prototype') {
+      console.warn('DEPRECATED: HTXComponent has been deprecated in favor of globalThis.HTX.Component')
+    }
+
+    return target[property]
+  }
+});

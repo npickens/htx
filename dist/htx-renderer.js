@@ -1,49 +1,43 @@
 /**
- * HTX
- * Copyright 2019-2022 Nate Pickens
+ * HTX.Renderer
+ * Copyright 2019-2023 Nate Pickens
  *
  * @license MIT
- * @version 0.0.9
+ * @version 0.1.0
  */
-let HTX = function() {
+(HTX => {
   const ELEMENT   = 1 << 0
   const CHILDLESS = 1 << 1
   const XMLNS     = 1 << 2
   const FLAG_BITS = 3
 
-  let instances = new WeakMap
+  class Renderer {
+    static templateResolver(template, context, isComponent = false) {
+      let templateFcn, refStr
 
-  return class {
-    static render(object, context) {
-      console.warn('HTX.render is deprecated. Please use new HTX(...).render() instead.')
+      if (typeof template == 'string') {
+        refStr = `${globalThis.HTX.templates ? 'globalThis.HTX.templates' : 'globalThis'}['${template}']`
 
-      let htx
+        isComponent && console.warn('DEPRECATED: Passing a template string to the HTX.Component ' +
+          `constructor is deprecated. Pass a direct template function reference instead: ${refStr}`)
 
-      if (object instanceof Node) {
-        htx = instances.get(object)
-        if (!htx) throw `HTX instance not found for Node: ${object}`
-        if (context) htx._context = context
+        templateFcn = (globalThis.HTX.templates || globalThis)[template]
       } else {
-        htx = new HTX(object, context)
+        templateFcn = template
+        refStr = templateFcn ? (templateFcn.name || '<anonymousFunction>') : 'undefined'
       }
 
-      return htx.render()
+      !isComponent && console.warn('DEPRECATED: new HTX(...) is deprecated. Instantiate the template ' +
+        `directly instead: new ${refStr}(context)`)
+
+      if (!templateFcn) throw `Template not found: ${template}`
+      return new templateFcn(context)
     }
 
     constructor(template, context) {
-      this._template = (HTX.templates || window)[template] || template
-      this._context = context
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
       this._dynamicIndex = {}
-
-      if (!this._template) throw `Template not found: ${template}`
-    }
-
-    render() {
-      this._template.call(this._context, this)
-
-      return this._currentNode
     }
 
     node(object, ...args) {
@@ -118,17 +112,20 @@ let HTX = function() {
       for (let i = 0; i < args.length - 2; i += 2) {
         let k = args[i]
         let v = args[i + 1]
-        let falsey = v === false || v === null || v === undefined
+
+        if (k == 'class' && v instanceof Array) {
+          v = v.filter(Boolean).join(' ') || null
+        }
 
         if (node.tagName == 'OPTION' && k == 'selected') {
           node[k] = v
         }
 
-        falsey ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+        v === false || v === null || v === undefined ? node.removeAttribute(k) :
+          node.setAttribute(k, v === true ? '' : v)
       }
 
       if (!parentNode) {
-        instances.set(node, this)
       } else if (!currentNode || currentNode == parentNode) {
         parentNode.append(node)
       } else if (node != currentNode) {
@@ -142,89 +139,38 @@ let HTX = function() {
 
     close(count = 1) {
       while (count-- > 0) {
-        let currentNode = this._currentNode
-        let parentNode = this._parentNode
-
-        this._parentNode = parentNode.parentNode
-
-        if (currentNode == parentNode) {
-          while (currentNode.firstChild) {
-            currentNode.firstChild.remove()
+        if (this._currentNode == this._parentNode) {
+          while (this._currentNode.firstChild) {
+            this._currentNode.firstChild.remove()
           }
         } else {
-          while (currentNode && currentNode.nextSibling) {
-            currentNode.nextSibling.remove()
+          while (this._currentNode.nextSibling) {
+            this._currentNode.nextSibling.remove()
           }
         }
 
-        this._currentNode = parentNode
+        this._currentNode = this._parentNode
+        this._parentNode = this._parentNode.parentNode
       }
 
       if (this._staticKeys.get(this._currentNode) == 1) {
+        this.rootNode = this._currentNode
         this._dynamicIndex = this._dynamicIndexTmp
         delete this._dynamicIndexTmp
       }
     }
   }
-}()
 
-/**
- * HTXComponent
- * Copyright 2019-2022 Nate Pickens
- *
- * @license MIT
- * @version 0.0.9
- */
-let HTXComponent = function() {
-  let isMounting
-  let renderRoot
-  let didRenders = []
+  HTX.Renderer = Renderer
+})(globalThis.HTX ||= {});
 
-  function runDidRenders() {
-    renderRoot = null
+globalThis.HTX = Object.assign(function(template, context) {
+  return globalThis.HTX.Renderer.templateResolver(template, context)
+}, globalThis.HTX ||= {});
 
-    while (didRenders.length) {
-      let [component, initial] = didRenders.shift()
-      component.didRender(initial)
-    }
+const HTX = new Proxy(globalThis.HTX, {
+  get(target, property, receiver) {
+    console.warn('DEPRECATED: Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
+    return target[property]
   }
-
-  return class {
-    constructor(htxPath) {
-      this.htx = new HTX(htxPath, this)
-    }
-
-    render() {
-      let initial = !this.node
-
-      if (initial && !isMounting && !renderRoot) {
-        throw 'Cannot render unmounted component (call mount() instead of render())'
-      }
-
-      renderRoot = renderRoot || this
-      this.node = this.htx.render()
-
-      if (this.didRender) didRenders.push([this, initial])
-      if (!isMounting && renderRoot == this) runDidRenders()
-
-      return this.node
-    }
-
-    mount(...args) {
-      isMounting = true
-
-      let placement = args.find((a) => typeof a == 'string') || 'append'
-      let placementNode = args.find((a) => typeof a != 'string') || document.body
-
-      if (placement == 'append' || placement == 'prepend' || placement == 'before' ||
-        placement == 'after' || placement == 'replace') {
-        placementNode[placement.replace('replace', 'replaceWith')](this.render())
-      } else {
-        throw `Unrecognized placement type: ${placement}`
-      }
-
-      isMounting = false
-      runDidRenders()
-    }
-  }
-}()
+});
