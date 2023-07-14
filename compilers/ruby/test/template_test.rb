@@ -14,94 +14,66 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('compiles a template') do
       name = '/crew.htx'
-      uncompiled = <<~EOS
-        <div class='crew'>
-          <h1>${this.title}</h1>
+      template = HTX::Template.new(name,
+        <<~EOS
+          <div class='crew'>
+            <h1>${this.title}</h1>
 
-          <ul class='members'>
+            <ul class='members'>
+              for (let member of this.members) {
+                <li class='member ${member.role}'>
+                  ${member.name}
+                </li>
+              }
+            </ul>
+          </div>
+        EOS
+      )
+
+      render_body = <<~EOS
+        $rndr.node('div', 'class', `crew`, 9)
+          $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
+
+          $rndr.node('ul', 'class', `members`, 33)
             for (let member of this.members) {
-              <li class='member ${member.role}'>
-                ${member.name}
-              </li>
+              $rndr.node('li', 'class', `member ${member.role}`, 41)
+                $rndr.node(member.name, 48)
+              $rndr.close()
             }
-          </ul>
-        </div>
+        $rndr.close(2)
       EOS
 
-      compiled = <<~EOS
-        globalThis['/crew.htx'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 'class', `crew`, 9)
-              $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
-
-              $rndr.node('ul', 'class', `members`, 33)
-                for (let member of this.members) {
-                  $rndr.node('li', 'class', `member ${member.role}`, 41)
-                    $rndr.node(member.name, 48)
-                  $rndr.close()
-                }
-            $rndr.close(2)
-
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
 
     test('assigns compiled template function to a custom object if assign_to option is specified') do
-      name = '/assign-to.htx'
-      assign_to = 'customObject'
-      uncompiled = '<div></div>'
-      compiled = <<~EOS
-        #{assign_to}['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 11)
+      compiled = HTX::Template.new('/assign-to.htx', '<div></div>').compile(assign_to: 'customObject')
+      expected = "customObject['/assign-to.htx'] = "
 
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile(assign_to: assign_to))
+      assert_equal(expected, compiled[0, expected.size])
     end
 
     test('treats tags with only whitespace text as childless') do
       name = '/whitespace-childless.htx'
-      uncompiled = <<~EOS
-        <div>
-          <span>
+      template = HTX::Template.new(name,
+        <<~EOS
+          <div>
+            <span>
 
-          </span>
-        </div>
+            </span>
+          </div>
+        EOS
+      )
+
+      render_body = <<~EOS
+        $rndr.node('div', 9)
+          $rndr.node('span', 19)
+        $rndr.close()
       EOS
 
-      compiled = <<~EOS
-        globalThis['/whitespace-childless.htx'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 9)
-              $rndr.node('span', 19)
-            $rndr.close()
-
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
   end
 
@@ -111,28 +83,37 @@ class HTXTest < Minitest::Test
 
   context(HTX::Template, '#compile', 'raises an error') do
     test('if template contains non-whitespace text at root level') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX::Template.new('/root-text.htx', '<div>Hello</div>, World!').compile
-      end
+      args = ['/root-text.htx', '<div>Hello</div>, World!']
+
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile }
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile(as_module: true) }
     end
 
     test('if template does not have a root element') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX::Template.new('/root-missing.htx', "\n  <!-- Hello, World! -->\n").compile
-      end
+      args = '/root-missing.htx', "\n  <!-- Hello, World! -->\n"
+
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile }
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile(as_module: true) }
     end
 
     test('if template has more than one root element') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX::Template.new('/root-multiple.htx', '<div></div><div></div>').compile
-      end
+      args = ['/root-multiple.htx', '<div></div><div></div>']
+
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile }
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile(as_module: true) }
     end
 
     test('if an unrecognized node type is encountered') do
-      template = HTX::Template.new('/unrecognized-node-type.htx', '<div><!-- Bad node --></div>')
+      args = ['/unrecognized-node-type.htx', '<div><!-- Bad node --></div>']
 
       assert_raises(HTX::MalformedTemplateError) do
+        template = HTX::Template.new(*args)
         template.stub(:preprocess, nil) { template.compile }
+      end
+
+      assert_raises(HTX::MalformedTemplateError) do
+        template = HTX::Template.new(*args)
+        template.stub(:preprocess, nil) { template.compile(as_module: true) }
       end
     end
   end
@@ -144,55 +125,34 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('removes comment nodes') do
       name = '/comment.htx'
-      uncompiled = <<~EOS
-        <div>Hello, <!-- Comment --> World!</div>
-      EOS
+      template = HTX::Template.new(name, '<div>Hello, <!-- Comment --> World!</div>')
+      render_body = "$rndr.node('div', 9); $rndr.node(`Hello,  World!`, 16); $rndr.close()"
 
-      compiled = <<~EOS
-        globalThis['/comment.htx'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 9); $rndr.node(`Hello,  World!`, 16); $rndr.close()
-
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
 
     test('removes trailing newline of previous text node along with comment node') do
       name = '/comment-with-newline.htx'
-      uncompiled = <<~EOS
-        <div>
-          Hello,
-          <!-- Comment -->
-          World!
-        </div>
-      EOS
+      template = HTX::Template.new(name,
+        <<~EOS
+          <div>
+            Hello,
+            <!-- Comment -->
+            World!
+          </div>
+        EOS
+      )
 
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 9)
-              $rndr.node(`Hello,
+      render_body = <<~EOS
+        $rndr.node('div', 9)
+          $rndr.node(`Hello,
         World!`, 16)
-            $rndr.close()
-
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
+        $rndr.close()
       EOS
 
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
   end
 
@@ -203,37 +163,25 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('compiles <htx-content> tag with no children to empty text node') do
       name = '/htx-content-empty.htx'
-      uncompiled = '<htx-content></htx-content>'
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node(``, 8)
+      template = HTX::Template.new(name, '<htx-content></htx-content>')
+      render_body = '$rndr.node(``, 8)'
 
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, uncompiled).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
 
     test('if <htx-content> tag contains a child tag') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX::Template.new(
-          '/htx-content-child-tag.htx',
-          '<htx-content>Hello, <b>World!</b></htx-content>'
-        ).compile
-      end
+      args = ['/htx-content-child-tag.htx', '<htx-content>Hello, <b>World!</b></htx-content>']
+
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile }
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile(as_module: true) }
     end
 
     test('if <htx-content> tag has an attribute other than htx-key') do
-      assert_raises(HTX::MalformedTemplateError) do
-        HTX::Template.new('/htx-content-attribute.htx', '<htx-content class="bad"></htx-content>').compile
-      end
+      args = ['/htx-content-attribute.htx', '<htx-content class="bad"></htx-content>']
+
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile }
+      assert_raises(HTX::MalformedTemplateError) { HTX::Template.new(*args).compile(as_module: true) }
     end
   end
 
@@ -244,31 +192,23 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('maintains case of mixed-case SVG tag and attribute names when non-HTML5 parser is used') do
       name = '/case-sensitive-svg.htx'
+      template = HTX::Template.new(name,
+        <<~EOS
+          <svg xmlns='http://www.w3.org/2000/svg'>
+            <clipPath clipPathUnits='userSpaceOnUse'></clipPath>
+          </svg>
+        EOS
+      )
 
-      content = <<~EOS
-        <svg xmlns='http://www.w3.org/2000/svg'>
-          <clipPath clipPathUnits='userSpaceOnUse'></clipPath>
-        </svg>
-      EOS
-
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
-              $rndr.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
-            $rndr.close()
-
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
+      render_body = <<~EOS
+        $rndr.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
+          $rndr.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
+        $rndr.close()
       EOS
 
       HTX::Template.stub(:html5_parser?, false) do
-        assert_equal(compiled, HTX::Template.new(name, content).compile)
+        assert_assign_render_body(render_body, name, template)
+        assert_module_render_body(render_body, name, template)
       end
     end
   end
@@ -284,44 +224,22 @@ class HTXTest < Minitest::Test
         'svg' => 'http://www.w3.org/2000/svg',
       }.each do |tag, xmlns|
         name = "/#{tag}-missing-xmlns.htx"
-        content = "<#{tag}></#{tag}>"
-        compiled = <<~EOS
-          globalThis['#{name}'] = ((HTX) => {
-            function render($rndr) {
-              $rndr.node('#{tag}', 'xmlns', `#{xmlns}`, 15)
+        template = HTX::Template.new(name, "<#{tag}></#{tag}>")
+        render_body = "$rndr.node('#{tag}', 'xmlns', `#{xmlns}`, 15)"
 
-              return $rndr.rootNode
-            }
-
-            return function Template(context) {
-              this.render = render.bind(context, new HTX.Renderer)
-            }
-          })(globalThis.HTX ||= {});
-        EOS
-
-        assert_equal(compiled, HTX::Template.new(name, content).compile)
+        assert_assign_render_body(render_body, name, template)
+        assert_module_render_body(render_body, name, template)
       end
     end
 
     test('uses explicitly-set xmlns attribute if one is present') do
       %w[math svg].each do |tag|
         name = "/#{tag}-xmlns.htx"
-        content = "<#{tag} xmlns='explicit-xmlns'></#{tag}>"
-        compiled = <<~EOS
-          globalThis['#{name}'] = ((HTX) => {
-            function render($rndr) {
-              $rndr.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)
+        template = HTX::Template.new(name, "<#{tag} xmlns='explicit-xmlns'></#{tag}>")
+        render_body = "$rndr.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)"
 
-              return $rndr.rootNode
-            }
-
-            return function Template(context) {
-              this.render = render.bind(context, new HTX.Renderer)
-            }
-          })(globalThis.HTX ||= {});
-        EOS
-
-        assert_equal(compiled, HTX::Template.new(name, content).compile)
+        assert_assign_render_body(render_body, name, template)
+        assert_module_render_body(render_body, name, template)
       end
     end
   end
@@ -333,22 +251,11 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('uses empty string for an attribute with no value') do
       name = '/empty-attribute-value.htx'
-      content = "<div empty-attr></div>"
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 'empty-attr', ``, 11)
+      template = HTX::Template.new(name, "<div empty-attr></div>")
+      render_body = "$rndr.node('div', 'empty-attr', ``, 11)"
 
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, content).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
   end
 
@@ -359,80 +266,104 @@ class HTXTest < Minitest::Test
   context(HTX::Template, '#compile') do
     test('indents with two spaces if template has no indentation') do
       name = '/indent.htx'
-      content = "<div>Hello, World!</div>"
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-          function render($rndr) {
-            $rndr.node('div', 9); $rndr.node(`Hello, World!`, 16); $rndr.close()
+      template = HTX::Template.new(name, '<div>Hello, World!</div>')
+      render_body = "$rndr.node('div', 9); $rndr.node(`Hello, World!`, 16); $rndr.close()"
 
-            return $rndr.rootNode
-          }
-
-          return function Template(context) {
-            this.render = render.bind(context, new HTX.Renderer)
-          }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, content).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
 
     test('indents with leading space(s) of first indented line') do
       name = '/indent.htx'
-      content = <<~EOS
-        <div>
-           Hello,
-            <b>World!</b>
-        </div>
+
+      template = HTX::Template.new(name,
+        <<~EOS
+          <div>
+             Hello,
+              <b>World!</b>
+          </div>
+        EOS
+      )
+
+      render_body = <<~EOS
+        $rndr.node('div', 9)
+           $rndr.node(`Hello,`, 16)
+            $rndr.node('b', 25); $rndr.node(`World!`, 32)
+        $rndr.close(2)
       EOS
 
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-           function render($rndr) {
-              $rndr.node('div', 9)
-                 $rndr.node(`Hello,`, 16)
-                  $rndr.node('b', 25); $rndr.node(`World!`, 32)
-              $rndr.close(2)
-
-              return $rndr.rootNode
-           }
-
-           return function Template(context) {
-              this.render = render.bind(context, new HTX.Renderer)
-           }
-        })(globalThis.HTX ||= {});
-      EOS
-
-      assert_equal(compiled, HTX::Template.new(name, content).compile)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
     end
 
-    test('indents with leading tab(s) of first indented line') do
+    test('indents with leading tab(s) of first indented lineasdf') do
       name = '/tab-indent.htx'
-      content = <<~EOS
-        <div>
-        \tHello,
-        \t\t<b>World!</b>
-        </div>
+      template = HTX::Template.new(name,
+        <<~EOS
+          <div>
+          \tHello,
+          \t\t<b>World!</b>
+          </div>
+        EOS
+      )
+
+      render_body = <<~EOS
+        $rndr.node('div', 9)
+        \t$rndr.node(`Hello,`, 16)
+        \t\t$rndr.node('b', 25); $rndr.node(`World!`, 32)
+        $rndr.close(2)
       EOS
 
-      compiled = <<~EOS
-        globalThis['#{name}'] = ((HTX) => {
-        \tfunction render($rndr) {
-        \t\t$rndr.node('div', 9)
-        \t\t\t$rndr.node(`Hello,`, 16)
-        \t\t\t\t$rndr.node('b', 25); $rndr.node(`World!`, 32)
-        \t\t$rndr.close(2)
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
+    end
+  end
 
-        \t\treturn $rndr.rootNode
-        \t}
+  ##########################################################################################################
+  ## Helpers                                                                                              ##
+  ##########################################################################################################
 
-        \treturn function Template(context) {
-        \t\tthis.render = render.bind(context, new HTX.Renderer)
-        \t}
+  def assert_assign_render_body(render_body, name, template)
+    assert_equal(compiled(name, render_body), template.compile)
+  end
+
+  def assert_module_render_body(render_body, name, template)
+    assert_equal(compiled(name, render_body, as_module: true), template.compile(as_module: true))
+  end
+
+  def compiled(name, render_body, as_module: false, import_path: '/htx/htx.js', assign_to: 'globalThis')
+    indent = render_body[/^[^\S\n]+/] || '  '
+    render_body = render_body.gsub(
+      /^[^\S\n]+[^\s]|(?<=\n)[^\n]+\Z/,
+      "#{as_module ? indent : indent * 2}\\0"
+    ) << (render_body[-1] == "\n" ? '' : "\n")
+
+    if as_module
+      <<~EOS
+        import * as HTX from '#{import_path}'
+
+        function render($rndr) {
+        #{indent}#{render_body}
+        #{indent}return $rndr.rootNode
+        }
+
+        export function Template(context) {
+        #{indent}this.render = render.bind(context, new HTX.Renderer)
+        }
+      EOS
+    else
+      <<~EOS
+        #{assign_to}['#{name}'] = ((HTX) => {
+        #{indent}function render($rndr) {
+        #{indent * 2}#{render_body}
+        #{indent * 2}return $rndr.rootNode
+        #{indent}}
+
+        #{indent}return function Template(context) {
+        #{indent}#{indent}this.render = render.bind(context, new HTX.Renderer)
+        #{indent}}
         })(globalThis.HTX ||= {});
       EOS
-
-      assert_equal(compiled, HTX::Template.new(name, content).compile)
     end
   end
 end

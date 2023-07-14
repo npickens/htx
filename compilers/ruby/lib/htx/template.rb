@@ -58,10 +58,14 @@ module HTX
     ##
     # Compiles the HTX template.
     #
-    # * +assign_to+ - JavaScript object to assign the template function to (default: +globalThis+).
+    # * +as_module+ - Boolean indicating whether or not to compile as a JavaScript module.
+    # * +import_path+ - Path to HTX JavaScript library for module import statement.
+    # * +assign_to+ - JavaScript object to assign the template function to if module not being used.
     #
-    def compile(assign_to: nil)
-      @assign_to = assign_to || 'globalThis'
+    def compile(as_module: nil, import_path: nil, assign_to: nil)
+      @as_module = as_module.nil? ? HTX.as_module : as_module
+      @import_path = import_path || HTX.import_path
+      @assign_to = assign_to || HTX.assign_to
       @base_indent = @indent = @content[INDENT_GUESS] || INDENT_DEFAULT
       @static_key = 0
       @close_count = 0
@@ -141,14 +145,12 @@ module HTX
     # * +node+ - Nokogiri node to process.
     #
     def process_fragment_node(node)
-      append(
-        <<~JS
-          #{@assign_to}['#{@name}'] = ((HTX) => {
-          #{@indent}function render($rndr) {
-        JS
-      )
+      append("#{
+        @as_module ? "import * as HTX from '#{@import_path}'\n\n"
+                   : "#{@assign_to}['#{@name}'] = ((HTX) => {\n#{@indent}"
+      }function render($rndr) {\n")
 
-      @indent = @base_indent * 2
+      @indent = @base_indent * 2 unless @as_module
 
       node.children.each do |child|
         process(child)
@@ -156,17 +158,17 @@ module HTX
 
       append("\n\n#{@indent}return $rndr.rootNode")
 
-      @indent = @base_indent
+      @indent = @as_module ? '' : @base_indent
 
       append(
-        +<<~JS
+        <<~JS
 
           #{@indent}}
 
-          #{@indent}return function Template(context) {
-          #{@indent * 2}this.render = render.bind(context, new HTX.Renderer)
-          #{@indent}}
-          })(globalThis.HTX ||= {});
+          #{@indent}#{@as_module ? 'export' : 'return'} function Template(context) {
+          #{@indent}#{@base_indent}this.render = render.bind(context, new HTX.Renderer)
+          #{@indent}}#{
+          "\n})(globalThis.HTX ||= {});" unless @as_module}
         JS
       )
 
