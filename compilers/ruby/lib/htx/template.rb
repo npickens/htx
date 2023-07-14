@@ -148,7 +148,7 @@ module HTX
       append("#{
         @as_module ? "import * as HTX from '#{@import_path}'\n\n"
                    : "#{@assign_to}['#{@name}'] = ((HTX) => {\n#{@indent}"
-      }function render($rndr) {\n")
+      }function render($renderer) {\n")
 
       @indent = @base_indent * 2 unless @as_module
 
@@ -156,7 +156,7 @@ module HTX
         process(child)
       end
 
-      append("\n\n#{@indent}return $rndr.rootNode")
+      append("\n\n#{@indent}return $renderer.rootNode")
 
       @indent = @as_module ? '' : @base_indent
 
@@ -270,7 +270,7 @@ module HTX
         close_count = @close_count
         @close_count = 0
 
-        append("$rndr.close(#{close_count unless close_count == 1})")
+        append("$renderer.close(#{close_count unless close_count == 1})")
       end
 
       if @whitespace_buff
@@ -290,9 +290,9 @@ module HTX
     end
 
     ##
-    # Appends an +$rndr.node+ call to the compiled template function string.
+    # Appends an +$renderer.node+ call to the compiled template function string.
     #
-    # * +args+ - Arguments to use for the +$rndr.node+ call (any +nil+ ones are removed).
+    # * +args+ - Arguments to use for the +$renderer.node+ call (any +nil+ ones are removed).
     #
     def append_htx_node(*args)
       return if args.first.nil?
@@ -301,7 +301,7 @@ module HTX
       args << 0 unless args.last.kind_of?(Integer)
       args[-1] |= (@static_key += 1) << FLAG_BITS
 
-      append("$rndr.node(#{args.join(', ')})")
+      append("$renderer.node(#{args.join(', ')})")
     end
 
     ##

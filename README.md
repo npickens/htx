@@ -34,7 +34,7 @@ section, but in summary it takes the following form:
 
 ```javascript
 globalThis['/components/crew.htx'] = ((HTX) => {
-  function render($rndr) {
+  function render($renderer) {
     // ...
   }
 
@@ -335,19 +335,19 @@ Result:
 
 ```javascript
 globalThis['/components/crew.htx'] = ((HTX) => {
-  function render($rndr) {
-    $rndr.node('div', 'class', `crew`, 9)
-      $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
+  function render($renderer) {
+    $renderer.node('div', 'class', `crew`, 9)
+      $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
 
-      $rndr.node('ul', 'class', `members`, 33)
+      $renderer.node('ul', 'class', `members`, 33)
         for (let member of this.member) {
-          $rndr.node('li', 'class', `member ${member.role}`, 41)
-            $rndr.node(member.name, 48)
-          $rndr.close()
+          $renderer.node('li', 'class', `member ${member.role}`, 41)
+            $renderer.node(member.name, 48)
+          $renderer.close()
         }
-    $rndr.close(2)
+    $renderer.close(2)
 
-    return $rndr.rootNode
+    return $renderer.rootNode
   }
 
   return function Template(context) {

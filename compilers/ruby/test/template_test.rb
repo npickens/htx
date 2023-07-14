@@ -31,16 +31,16 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('div', 'class', `crew`, 9)
-          $rndr.node('h1', 17); $rndr.node(this.title, 24); $rndr.close()
+        $renderer.node('div', 'class', `crew`, 9)
+          $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
 
-          $rndr.node('ul', 'class', `members`, 33)
+          $renderer.node('ul', 'class', `members`, 33)
             for (let member of this.members) {
-              $rndr.node('li', 'class', `member ${member.role}`, 41)
-                $rndr.node(member.name, 48)
-              $rndr.close()
+              $renderer.node('li', 'class', `member ${member.role}`, 41)
+                $renderer.node(member.name, 48)
+              $renderer.close()
             }
-        $rndr.close(2)
+        $renderer.close(2)
       EOS
 
       assert_assign_render_body(render_body, name, template)
@@ -67,9 +67,9 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('div', 9)
-          $rndr.node('span', 19)
-        $rndr.close()
+        $renderer.node('div', 9)
+          $renderer.node('span', 19)
+        $renderer.close()
       EOS
 
       assert_assign_render_body(render_body, name, template)
@@ -126,7 +126,7 @@ class HTXTest < Minitest::Test
     test('removes comment nodes') do
       name = '/comment.htx'
       template = HTX::Template.new(name, '<div>Hello, <!-- Comment --> World!</div>')
-      render_body = "$rndr.node('div', 9); $rndr.node(`Hello,  World!`, 16); $rndr.close()"
+      render_body = "$renderer.node('div', 9); $renderer.node(`Hello,  World!`, 16); $renderer.close()"
 
       assert_assign_render_body(render_body, name, template)
       assert_module_render_body(render_body, name, template)
@@ -145,10 +145,10 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('div', 9)
-          $rndr.node(`Hello,
+        $renderer.node('div', 9)
+          $renderer.node(`Hello,
         World!`, 16)
-        $rndr.close()
+        $renderer.close()
       EOS
 
       assert_assign_render_body(render_body, name, template)
@@ -164,7 +164,7 @@ class HTXTest < Minitest::Test
     test('compiles <htx-content> tag with no children to empty text node') do
       name = '/htx-content-empty.htx'
       template = HTX::Template.new(name, '<htx-content></htx-content>')
-      render_body = '$rndr.node(``, 8)'
+      render_body = '$renderer.node(``, 8)'
 
       assert_assign_render_body(render_body, name, template)
       assert_module_render_body(render_body, name, template)
@@ -201,9 +201,9 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
-          $rndr.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
-        $rndr.close()
+        $renderer.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
+          $renderer.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
+        $renderer.close()
       EOS
 
       HTX::Template.stub(:html5_parser?, false) do
@@ -225,7 +225,7 @@ class HTXTest < Minitest::Test
       }.each do |tag, xmlns|
         name = "/#{tag}-missing-xmlns.htx"
         template = HTX::Template.new(name, "<#{tag}></#{tag}>")
-        render_body = "$rndr.node('#{tag}', 'xmlns', `#{xmlns}`, 15)"
+        render_body = "$renderer.node('#{tag}', 'xmlns', `#{xmlns}`, 15)"
 
         assert_assign_render_body(render_body, name, template)
         assert_module_render_body(render_body, name, template)
@@ -236,7 +236,7 @@ class HTXTest < Minitest::Test
       %w[math svg].each do |tag|
         name = "/#{tag}-xmlns.htx"
         template = HTX::Template.new(name, "<#{tag} xmlns='explicit-xmlns'></#{tag}>")
-        render_body = "$rndr.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)"
+        render_body = "$renderer.node('#{tag}', 'xmlns', `explicit-xmlns`, 15)"
 
         assert_assign_render_body(render_body, name, template)
         assert_module_render_body(render_body, name, template)
@@ -252,7 +252,7 @@ class HTXTest < Minitest::Test
     test('uses empty string for an attribute with no value') do
       name = '/empty-attribute-value.htx'
       template = HTX::Template.new(name, "<div empty-attr></div>")
-      render_body = "$rndr.node('div', 'empty-attr', ``, 11)"
+      render_body = "$renderer.node('div', 'empty-attr', ``, 11)"
 
       assert_assign_render_body(render_body, name, template)
       assert_module_render_body(render_body, name, template)
@@ -267,7 +267,7 @@ class HTXTest < Minitest::Test
     test('indents with two spaces if template has no indentation') do
       name = '/indent.htx'
       template = HTX::Template.new(name, '<div>Hello, World!</div>')
-      render_body = "$rndr.node('div', 9); $rndr.node(`Hello, World!`, 16); $rndr.close()"
+      render_body = "$renderer.node('div', 9); $renderer.node(`Hello, World!`, 16); $renderer.close()"
 
       assert_assign_render_body(render_body, name, template)
       assert_module_render_body(render_body, name, template)
@@ -286,10 +286,10 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('div', 9)
-           $rndr.node(`Hello,`, 16)
-            $rndr.node('b', 25); $rndr.node(`World!`, 32)
-        $rndr.close(2)
+        $renderer.node('div', 9)
+           $renderer.node(`Hello,`, 16)
+            $renderer.node('b', 25); $renderer.node(`World!`, 32)
+        $renderer.close(2)
       EOS
 
       assert_assign_render_body(render_body, name, template)
@@ -308,10 +308,10 @@ class HTXTest < Minitest::Test
       )
 
       render_body = <<~EOS
-        $rndr.node('div', 9)
-        \t$rndr.node(`Hello,`, 16)
-        \t\t$rndr.node('b', 25); $rndr.node(`World!`, 32)
-        $rndr.close(2)
+        $renderer.node('div', 9)
+        \t$renderer.node(`Hello,`, 16)
+        \t\t$renderer.node('b', 25); $renderer.node(`World!`, 32)
+        $renderer.close(2)
       EOS
 
       assert_assign_render_body(render_body, name, template)
@@ -342,9 +342,9 @@ class HTXTest < Minitest::Test
       <<~EOS
         import * as HTX from '#{import_path}'
 
-        function render($rndr) {
+        function render($renderer) {
         #{indent}#{render_body}
-        #{indent}return $rndr.rootNode
+        #{indent}return $renderer.rootNode
         }
 
         export function Template(context) {
@@ -354,9 +354,9 @@ class HTXTest < Minitest::Test
     else
       <<~EOS
         #{assign_to}['#{name}'] = ((HTX) => {
-        #{indent}function render($rndr) {
+        #{indent}function render($renderer) {
         #{indent * 2}#{render_body}
-        #{indent * 2}return $rndr.rootNode
+        #{indent * 2}return $renderer.rootNode
         #{indent}}
 
         #{indent}return function Template(context) {
