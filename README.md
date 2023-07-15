@@ -33,6 +33,21 @@ JavaScript library. The full compiled version of the above template is shown in 
 section, but in summary it takes the following form:
 
 ```javascript
+import * as HTX from '/htx/htx.js'
+
+function render($renderer) {
+  // ...
+}
+
+export function Template(context) {
+  this.render = render.bind(context, new HTX.Renderer)
+}
+```
+
+Or in environments where ES6 modules are not available and/or desired, an IIFE with assignment to
+`globalThis` (or another object) is similar:
+
+```javascript
 globalThis['/components/crew.htx'] = ((HTX) => {
   function render($renderer) {
     // ...
@@ -49,6 +64,8 @@ a simple `render` function, which produces a DOM fragment the first time it is c
 fragment on subsequent calls:
 
 ```javascript
+import {Template} from '/components/crew.htx'
+
 let crew = {
   title: 'Serenity Crew',
   members: [
@@ -59,7 +76,7 @@ let crew = {
 }
 
 // The constructor argument provides the `this` binding used within the template.
-let crewView = new globalThis['/components/crew.htx'](crew)
+let crewView = new Template(crew)
 
 // The `render` function returns a standard Node object.
 document.body.append(crewView.render())
@@ -325,16 +342,48 @@ Compile a template:
 path = '/components/crew.htx'
 content = File.read("/assets#{path}")
 
-HTX.compile(path, content)
-
-# Or to attach to a custom object instead of `globalThis`:
-HTX.compile(path, content, assign_to: 'myTemplates')
+HTX.compile(path, content,
+  as_module: true,              # Default: false
+  import_path: 'vendor/htx.js', # Default: '/htx/htx.js' (ignored when as_module: false)
+  assign_to: 'myTemplates',     # Default: 'globalThis' (ignored when as_module: true)
+)
 ```
 
 Result:
 
 ```javascript
-globalThis['/components/crew.htx'] = ((HTX) => {
+import * as HTX from 'vendor/htx.js'
+
+function render($renderer) {
+  $renderer.node('div', 'class', `crew`, 9)
+    $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
+
+    $renderer.node('ul', 'class', `members`, 33)
+      for (let member of this.member) {
+        $renderer.node('li', 'class', `member ${member.role}`, 41)
+          $renderer.node(member.name, 48)
+        $renderer.close()
+      }
+  $renderer.close(2)
+
+  return $renderer.rootNode
+}
+
+export function Template(context) {
+  this.render = render.bind(context, new HTX.Renderer)
+}
+```
+
+Alternatively compile as an IIFE assigned to either `globalThis` (default) or a custom object:
+
+```ruby
+HTX.compile(path, content, as_module: false, assign_to: 'myTemplates')
+```
+
+Result:
+
+```javascript
+myTemplates['/components/crew.htx'] = ((HTX) => {
   function render($renderer) {
     $renderer.node('div', 'class', `crew`, 9)
       $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
@@ -354,9 +403,6 @@ globalThis['/components/crew.htx'] = ((HTX) => {
     this.render = render.bind(context, new HTX.Renderer)
   }
 })(globalThis.HTX ||= {});
-
-// If `assign_to` is specified:
-myTemplates['/components/crew.htx'] = // ...
 ```
 
 A compiled template function is just a series of calls to an `HTX.Renderer` instance, with any control
@@ -427,9 +473,11 @@ extended by various component classes. The constructor takes the an HTX template
 component.
 
 ```javascript
+import {Template} from '/components/crew.htx'
+
 class Crew extends HTX.Component {
   constructor() {
-    super(globalThis['/components/crew.htx'])
+    super(Template)
 
     this.members = [
       {role: 'captain', name: 'Mal'},
