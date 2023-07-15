@@ -15,22 +15,8 @@ export class Renderer {
    * @param isComponent Boolean indicating if the caller is from HTX.Component.
    * */
   static templateResolver(template, context, isComponent = false) {
-    let templateFcn, refStr
-
-    if (typeof template == 'string') {
-      refStr = `${globalThis.HTX.templates ? 'globalThis.HTX.templates' : 'globalThis'}['${template}']`
-
-      isComponent && console.warn('DEPRECATED: Passing a template string to the HTX.Component ' +
-        `constructor is deprecated. Pass a direct template function reference instead: ${refStr}`)
-
-      templateFcn = (globalThis.HTX.templates || globalThis)[template]
-    } else {
-      templateFcn = template
-      refStr = templateFcn ? (templateFcn.name || '<anonymousFunction>') : 'undefined'
-    }
-
-    !isComponent && console.warn('DEPRECATED: new HTX(...) is deprecated. Instantiate the template ' +
-      `directly instead: new ${refStr}(context)`)
+    let templateFcn = typeof template == 'string' ? ((typeof HTX != 'undefined' && HTX.templates) ||
+      globalThis)[template] : template
 
     if (!templateFcn) throw `Template not found: ${template}`
     return new templateFcn(context)

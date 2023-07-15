@@ -30,6 +30,11 @@ export class Component {
    * @param template HTX template function.
    */
   constructor(template) {
+    if (typeof template == 'string') {
+      console.warn('[DEPRECATED] Passing a template name to the HTX.Component constructor is deprecated: ' +
+        'pass a direct template function reference instead')
+    }
+
     this.template = HTX.Renderer.templateResolver(template, this, true)
   }
 

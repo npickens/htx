@@ -50,12 +50,15 @@ DEPENDENCIES = [
 DEPRECATIONS = {
   'Renderer' => <<~JS,
     globalThis.HTX = Object.assign(function(template, context) {
+      console.warn('[DEPRECATED] new HTX(...) is deprecated in favor of direct template instantiation: ' +
+        'new templateFcn(context)')
+
       return globalThis.HTX.Renderer.templateResolver(template, context)
     }, globalThis.HTX ||= {});
 
     const HTX = new Proxy(globalThis.HTX, {
       get(target, property, receiver) {
-        console.warn('DEPRECATED: Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
+        console.warn('[DEPRECATED] Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
         return target[property]
       }
     });
@@ -65,7 +68,7 @@ DEPRECATIONS = {
     const HTXComponent = new Proxy(globalThis.HTX.Component, {
       get(target, property, receiver) {
         if (property == 'prototype') {
-          console.warn('DEPRECATED: HTXComponent has been deprecated in favor of globalThis.HTX.Component')
+          console.warn('[DEPRECATED] HTXComponent has been deprecated in favor of globalThis.HTX.Component')
         }
 
         return target[property]
