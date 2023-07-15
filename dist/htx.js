@@ -3,7 +3,7 @@
  * Copyright 2019-2023 Nate Pickens
  *
  * @license MIT
- * @version 0.1.0
+ * @version 0.1.1
  */
 (HTX => {
   const ELEMENT   = 1 << 0
@@ -13,22 +13,8 @@
 
   class Renderer {
     static templateResolver(template, context, isComponent = false) {
-      let templateFcn, refStr
-
-      if (typeof template == 'string') {
-        refStr = `${globalThis.HTX.templates ? 'globalThis.HTX.templates' : 'globalThis'}['${template}']`
-
-        isComponent && console.warn('DEPRECATED: Passing a template string to the HTX.Component ' +
-          `constructor is deprecated. Pass a direct template function reference instead: ${refStr}`)
-
-        templateFcn = (globalThis.HTX.templates || globalThis)[template]
-      } else {
-        templateFcn = template
-        refStr = templateFcn ? (templateFcn.name || '<anonymousFunction>') : 'undefined'
-      }
-
-      !isComponent && console.warn('DEPRECATED: new HTX(...) is deprecated. Instantiate the template ' +
-        `directly instead: new ${refStr}(context)`)
+      let templateFcn = typeof template == 'string' ? ((typeof HTX != 'undefined' && HTX.templates) ||
+        globalThis)[template] : template
 
       if (!templateFcn) throw `Template not found: ${template}`
       return new templateFcn(context)
@@ -165,12 +151,15 @@
 })(globalThis.HTX ||= {});
 
 globalThis.HTX = Object.assign(function(template, context) {
+  console.warn('[DEPRECATED] new HTX(...) is deprecated: directly instantiate template instead [e.g. ' +
+    'new templateFcn(context)]')
+
   return globalThis.HTX.Renderer.templateResolver(template, context)
 }, globalThis.HTX ||= {});
 
 const HTX = new Proxy(globalThis.HTX, {
   get(target, property, receiver) {
-    console.warn('DEPRECATED: Top-level HTX variable has ben deprecated in favor of globalThis.HTX')
+    console.warn('[DEPRECATED] Top-level HTX variable is deprecated: use globalThis.HTX instead')
     return target[property]
   }
 });
@@ -180,7 +169,7 @@ const HTX = new Proxy(globalThis.HTX, {
  * Copyright 2019-2023 Nate Pickens
  *
  * @license MIT
- * @version 0.1.0
+ * @version 0.1.1
  */
 (HTX => {
   let isMounting
@@ -198,6 +187,11 @@ const HTX = new Proxy(globalThis.HTX, {
 
   class Component {
     constructor(template) {
+      if (typeof template == 'string') {
+        console.warn('[DEPRECATED] Passing a template name to the HTX.Component constructor is ' +
+          'deprecated: pass a direct template function reference instead')
+      }
+
       this.template = HTX.Renderer.templateResolver(template, this, true)
     }
 
@@ -241,7 +235,8 @@ const HTX = new Proxy(globalThis.HTX, {
 const HTXComponent = new Proxy(globalThis.HTX.Component, {
   get(target, property, receiver) {
     if (property == 'prototype') {
-      console.warn('DEPRECATED: HTXComponent has been deprecated in favor of globalThis.HTX.Component')
+      console.warn('[DEPRECATED] Top-level HTXComponent variable is deprecated: use ' +
+        'globalThis.HTX.Component instead')
     }
 
     return target[property]

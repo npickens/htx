@@ -3,7 +3,7 @@
  * Copyright 2019-2023 Nate Pickens
  *
  * @license MIT
- * @version 0.1.0
+ * @version 0.1.1
  */
 (HTX => {
   let isMounting
@@ -21,6 +21,11 @@
 
   class Component {
     constructor(template) {
+      if (typeof template == 'string') {
+        console.warn('[DEPRECATED] Passing a template name to the HTX.Component constructor is ' +
+          'deprecated: pass a direct template function reference instead')
+      }
+
       this.template = HTX.Renderer.templateResolver(template, this, true)
     }
 
@@ -64,7 +69,8 @@
 const HTXComponent = new Proxy(globalThis.HTX.Component, {
   get(target, property, receiver) {
     if (property == 'prototype') {
-      console.warn('DEPRECATED: HTXComponent has been deprecated in favor of globalThis.HTX.Component')
+      console.warn('[DEPRECATED] Top-level HTXComponent variable is deprecated: use ' +
+        'globalThis.HTX.Component instead')
     }
 
     return target[property]
