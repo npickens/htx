@@ -466,7 +466,7 @@ An optional `didRender` function can be implemented, which will be called whenev
 passed one argument that is `true` on the initial rendering and `false` thereafter.
 
 ```javascript
-class Crew extends HTXComponent {
+class Crew extends HTX.Component {
   // ...
 
   didRender(initial) {
