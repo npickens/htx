@@ -1,8 +1,7 @@
 # HTX Ruby Compiler
 
 HTX templates are compiled to JavaScript before being used. This library provides a Ruby implementation of
-the compiler. For more information on HTX, see
-[https://github.com/npickens/htx](https://github.com/npickens/htx).
+the compiler. For more information on HTX, see the main [README](https://github.com/npickens/htx).
 
 ## Installation
 
@@ -20,48 +19,40 @@ gem install htx
 
 ## Usage
 
-To compile an HTX template, pass a name (conventionally the path of the template file) and template content
-as strings to the `HTX.compile` method (all other arguments are optional). By default, compiled templates
-are a function assigned to the `globalThis` object:
+HTX templates can be compiled to either a JavaScript module format or an IIFE assigned to a property on
+either `globalThis` or a custom object. To compile as a module:
 
 ```ruby
 path = '/components/crew.htx'
-template = File.read(File.join('some/asset/dir', path))
+content = File.read("/assets#{path}")
 
-HTX.compile(path, template)
-# => "globalThis['/components/crew.htx'] = ..."
+HTX.compile(path, content, as_module: true, import_path: 'vendor/htx.js')
+# => "import * as HTX from 'vendor/htx.js'
+#
+#     ...
+#
+#     export function Template { ... }"
+#
+```
 
-HTX.compile(path, template, assign_to: 'myTemplates')
+Note that with the module format the name of the template does not appear anywhere in its compiled form, but
+is still used/useful for tracking down errors when compilation is handled by an overall asset management
+system (such as [Darkroom](https://github.com/npickens/darkroom)).
+
+To compile to an IIFE assigned to a custom object:
+
+```ruby
+HTX.compile(path, content, as_module: false, assign_to: 'myTemplates')
 # => "myTemplates['/components/crew.htx'] = ..."
 ```
 
-The above format is the default due to it historically being the only option. Alternatively templates can be
-compiled as a JavaScript module:
+Options can be configured globally so they don't have to be passed to `HTX.compile` every time:
 
 ```ruby
-path = '/components/crew.htx'
-template = File.read(File.join('some/asset/dir', path))
-
-HTX.compile(path, template, as_module: true)
-# => "import * as HTX from '/htx/htx.js'
-#
-#     // ...
-#
-#     export function Template { ... }"
-#
-
-HTX.compile(path, template, as_module: true, import_path: 'vendor/htx.js')
-# => "import * as HTX from 'vendor/htx.js'
-#
-#     // ...
-#
-#     export function Template { ... }"
-#
+HTX.as_module = true              # Default: false
+HTX.import_path = 'vendor/htx.js' # Default: "/htx/htx.js"
+HTX.assign_to = 'myTemplates'     # Default: "globalThis"
 ```
-
-Note that with the module format the name of the template does not appear anywhere in the output, but is
-still used/useful for tracking down errors when compilation is handled by an overall asset management system
-(such as [Darkroom](https://github.com/npickens/darkroom)).
 
 ## Contributing
 
