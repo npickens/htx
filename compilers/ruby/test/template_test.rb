@@ -186,6 +186,21 @@ class HTXTest < Minitest::Test
   end
 
   ##########################################################################################################
+  ## <template>                                                                                           ##
+  ##########################################################################################################
+
+  context(HTX::Template, '#compile') do
+    test('compiles children of <template> tag but not the tag itself') do
+      name = '/template-tag.htx'
+      template = HTX::Template.new(name, '<table><template>if (true) { <tr></tr> }</template></table>')
+      render_body = "$renderer.node('table', 9); if (true) {  $renderer.node('tr', 19) } $renderer.close()"
+
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
+    end
+  end
+
+  ##########################################################################################################
   ## Attributes - Case                                                                                    ##
   ##########################################################################################################
 

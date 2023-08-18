@@ -182,6 +182,7 @@ module HTX
     # * +xmlns+ - True if node is the descendant of a node with an xmlns attribute.
     #
     def process_element_node(node, xmlns: false)
+      is_template = node.name == 'template'
       children = node.children
       childless = children.empty? || (children.size == 1 && self.class.formatting_node?(children.first))
       dynamic_key = self.class.attribute_value(node.attr(DYNAMIC_KEY_ATTR))
@@ -201,19 +202,21 @@ module HTX
           dynamic_key: dynamic_key,
         )
       else
-        append_htx_node(
-          "'#{self.class.tag_name(node.name)}'",
-          *attributes,
-          dynamic_key,
-          ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
-        )
+        unless is_template
+          append_htx_node(
+            "'#{self.class.tag_name(node.name)}'",
+            *attributes,
+            dynamic_key,
+            ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
+          )
+        end
 
         unless childless
           children.each do |child|
             process(child, xmlns: xmlns)
           end
 
-          @close_count += 1
+          @close_count += 1 unless is_template
         end
       end
     end
