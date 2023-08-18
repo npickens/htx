@@ -20,8 +20,8 @@ module HTX
     INDENT_GUESS = /^( +|\t+)(?=\S)/.freeze
     INDENT_REGEX = /\n(?=[^\n])/.freeze
 
-    NO_SEMICOLON_BEGIN = /\A\s*[\n;}]/.freeze
-    NO_SEMICOLON_END = /(\A|[\n;{}][^\S\n]*)\z/.freeze
+    AUTO_SEMICOLON_BEGIN = /\A\s*[\n;}]/.freeze
+    AUTO_SEMICOLON_END = /(\A|[\n;{}][^\S\n]*)\z/.freeze
 
     NEWLINE_BEGIN = /\A\s*\n/.freeze
     NEWLINE_END = /\n[^\S\n]*\z/.freeze
@@ -281,8 +281,14 @@ module HTX
 
       if (confirmed_newline || @statement_buff.match?(NEWLINE_END)) && !text.match?(NEWLINE_BEGIN)
         @statement_buff << @indent
-      elsif !@statement_buff.match?(NO_SEMICOLON_END) && !text.match?(NO_SEMICOLON_BEGIN)
-        @statement_buff << ";#{' ' unless text.match?(WHITESPACE_BEGIN)}"
+      else
+        unless @statement_buff.match?(AUTO_SEMICOLON_END) || text.match?(AUTO_SEMICOLON_BEGIN)
+          @statement_buff << ";"
+        end
+
+        unless @statement_buff.empty? || text.match?(WHITESPACE_BEGIN)
+          @statement_buff << ' '
+        end
       end
 
       flush if text.match?(NON_WHITESPACE)
