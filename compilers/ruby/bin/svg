@@ -29,10 +29,9 @@ error = nil
                .map { |n| n.text.delete_prefix('<').delete_suffix('>') }
                .select { |t| t.match?(/[A-Z]/) }
                .sort
-               .join(' ')
-               .gsub(/([\w ]{1,#{break_at}})( |$)/, "\n#{indent}\\1")
+               .join("\n#{indent}")
 
-    "#{indent_const}#{const} = %w[#{items}\n#{indent_const}"
+    "#{indent_const}#{const} = %w[\n#{indent}#{items}\n#{indent_const}"
   end
 
   if result

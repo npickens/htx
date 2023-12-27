@@ -419,24 +419,104 @@ module HTX
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Element
     TAG_MAP = %w[
-      animateMotion animateTransform clipPath feBlend feColorMatrix feComponentTransfer feComposite
-      feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow feFlood feFuncA
-      feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset fePointLight
-      feSpecularLighting feSpotLight feTile feTurbulence foreignObject linearGradient radialGradient
+      animateMotion
+      animateTransform
+      clipPath
+      feBlend
+      feColorMatrix
+      feComponentTransfer
+      feComposite
+      feConvolveMatrix
+      feDiffuseLighting
+      feDisplacementMap
+      feDistantLight
+      feDropShadow
+      feFlood
+      feFuncA
+      feFuncB
+      feFuncG
+      feFuncR
+      feGaussianBlur
+      feImage
+      feMerge
+      feMergeNode
+      feMorphology
+      feOffset
+      fePointLight
+      feSpecularLighting
+      feSpotLight
+      feTile
+      feTurbulence
+      foreignObject
+      linearGradient
+      radialGradient
       textPath
     ].map { |tag| [tag.downcase, tag] }.to_h.freeze
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute
     ATTR_MAP = %w[
-      attributeName attributeType baseFrequency baseProfile calcMode clipPathUnits contentScriptType
-      contentStyleType diffuseConstant edgeMode filterRes filterUnits glyphRef gradientTransform
-      gradientUnits kernelMatrix kernelUnitLength keyPoints keySplines keyTimes lengthAdjust
-      limitingConeAngle markerHeight markerUnits markerWidth maskContentUnits maskUnits numOctaves
-      pathLength patternContentUnits patternTransform patternUnits pointsAtX pointsAtY pointsAtZ
-      preserveAlpha preserveAspectRatio primitiveUnits refX refY referrerPolicy repeatCount repeatDur
-      requiredExtensions requiredFeatures specularConstant specularExponent spreadMethod startOffset
-      stdDeviation stitchTiles surfaceScale systemLanguage tableValues targetX targetY textLength viewBox
-      viewTarget xChannelSelector yChannelSelector zoomAndPan
+      attributeName
+      attributeType
+      baseFrequency
+      baseProfile
+      calcMode
+      clipPathUnits
+      contentScriptType
+      contentStyleType
+      diffuseConstant
+      edgeMode
+      filterRes
+      filterUnits
+      glyphRef
+      gradientTransform
+      gradientUnits
+      kernelMatrix
+      kernelUnitLength
+      keyPoints
+      keySplines
+      keyTimes
+      lengthAdjust
+      limitingConeAngle
+      markerHeight
+      markerUnits
+      markerWidth
+      maskContentUnits
+      maskUnits
+      numOctaves
+      pathLength
+      patternContentUnits
+      patternTransform
+      patternUnits
+      pointsAtX
+      pointsAtY
+      pointsAtZ
+      preserveAlpha
+      preserveAspectRatio
+      primitiveUnits
+      refX
+      refY
+      referrerPolicy
+      repeatCount
+      repeatDur
+      requiredExtensions
+      requiredFeatures
+      specularConstant
+      specularExponent
+      spreadMethod
+      startOffset
+      stdDeviation
+      stitchTiles
+      surfaceScale
+      systemLanguage
+      tableValues
+      targetX
+      targetY
+      textLength
+      viewBox
+      viewTarget
+      xChannelSelector
+      yChannelSelector
+      zoomAndPan
     ].map { |attr| [attr.downcase, attr] }.to_h.freeze
   end
 end
