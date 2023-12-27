@@ -8,21 +8,6 @@ const FLAG_BITS = 3
  */
 export class Renderer {
   /**
-   * Temporary function to handle deprecated way of looking up a template.
-   *
-   * @param template Name of or direct reference to template function
-   * @param context Context (`this` binding) for the template function call.
-   * @param isComponent Boolean indicating if the caller is from HTX.Component.
-   * */
-  static templateResolver(template, context, isComponent = false) {
-    let templateFcn = typeof template == 'string' ? ((typeof HTX != 'undefined' && HTX.templates) ||
-      globalThis)[template] : template
-
-    if (!templateFcn) throw `Template not found: ${template}`
-    return new templateFcn(context)
-  }
-
-  /**
    * Creates a new HTX instance.
    *
    * @constructor

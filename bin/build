@@ -49,13 +49,6 @@ DEPENDENCIES = [
 
 DEPRECATIONS = {
   'Renderer' => <<~JS,
-    globalThis.HTX = Object.assign(function(template, context) {
-      console.warn('[DEPRECATED] new HTX(...) is deprecated: directly instantiate template instead [e.g. ' +
-        'new templateFcn(context)]')
-
-      return globalThis.HTX.Renderer.templateResolver(template, context)
-    }, globalThis.HTX ||= {});
-
     const HTX = new Proxy(globalThis.HTX, {
       get(target, property, receiver) {
         console.warn('[DEPRECATED] Top-level HTX variable is deprecated: use globalThis.HTX instead')
