@@ -57,18 +57,7 @@ DEPRECATIONS = {
     });
   JS
 
-  'Component' => <<~JS,
-    const HTXComponent = new Proxy(globalThis.HTX.Component, {
-      get(target, property, receiver) {
-        if (property == 'prototype') {
-          console.warn('[DEPRECATED] Top-level HTXComponent variable is deprecated: use ' +
-            'globalThis.HTX.Component instead')
-        }
-
-        return target[property]
-      }
-    });
-  JS
+  'Component' => '',
 }.freeze
 
 ############################################################################################################
