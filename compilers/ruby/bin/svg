@@ -19,26 +19,35 @@ error = nil
   ['TAG_MAP', 'Element', '.main-page-content > section > div.section-content > ul > li > a > code'],
   ['ATTR_MAP', 'Attribute', '.main-page-content > section > div.section-content > ul > li > code > a'],
 ].each do |(const, page, selector)|
-  result = code.sub!(/^( *)#{const} = [^\]]+/) do
-    indent_const = $1
-    indent = "#{indent_const}  "
-    break_at = MAX_LINE_LENGTH - indent.size
+  old_items = []
+  new_items = []
+
+  code = code.sub(/^( *)#{const} = %w\[\s*([^\]]+)\]/) do
+    const_indent = $1
+    old_items = $2.split(/\s+/)
+    item_indent = "#{const_indent}  "
 
     doc = Nokogiri::HTML(URI.open("#{MOZILLA_BASE_URL}#{page}"))
-    items = doc.css(selector)
+    new_items = doc.css(selector)
                .map { |n| n.text.delete_prefix('<').delete_suffix('>') }
                .select { |t| t.match?(/[A-Z]/) }
                .sort
-               .join("\n#{indent}")
 
-    "#{indent_const}#{const} = %w[\n#{indent}#{items}\n#{indent_const}"
+    "#{const_indent}#{const} = %w[\n#{item_indent}#{new_items.join("\n#{item_indent}")}\n#{const_indent}]"
   end
 
-  if result
-    puts("\e[32m\u2714 #{const} updated in #{CODE_FILE}\e[39m")
-  else
+  removed = old_items - new_items
+  added = new_items - old_items
+
+  if old_items.empty?
     $stderr.puts("\e[31m\u2718 #{const} not updated in #{CODE_FILE} (could not find definition)\e[39m")
     error = true
+  elsif !removed.empty? || !added.empty?
+    puts("\e[32m\u2714 #{const} updated in #{CODE_FILE}\e[39m")
+    puts("  REMOVED: #{removed.empty? ? '[none]' : removed.join(', ')}")
+    puts("  ADDED: #{added.empty? ? '[none]' : added.join(', ')}")
+  else
+    puts("\u2714 #{const} up to date in #{CODE_FILE}")
   end
 end
 
