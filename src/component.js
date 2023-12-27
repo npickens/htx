@@ -1,5 +1,3 @@
-import * as HTX from 'renderer.js'
-
 let isMounting
 let renderRoot
 let didRenders = []
