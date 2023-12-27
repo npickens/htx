@@ -47,11 +47,6 @@ DEPENDENCIES = [
   ['Ruby Gems', "cd #{RUBY_DIR} && bundle check", "cd #{RUBY_DIR} && bundle install"].freeze,
 ].freeze
 
-DEPRECATIONS = {
-  'Renderer' => '',
-  'Component' => '',
-}.freeze
-
 ############################################################################################################
 ## Tasks                                                                                                  ##
 ############################################################################################################
@@ -148,7 +143,6 @@ def build_javascript
 
       content.prepend(javascript_comment(full_lib_name) + "(HTX => {\n")
       content.concat("})(globalThis.HTX ||= {});\n\n")
-      content.concat(DEPRECATIONS[lib_name])
 
       all << content
 
