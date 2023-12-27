@@ -48,15 +48,7 @@ DEPENDENCIES = [
 ].freeze
 
 DEPRECATIONS = {
-  'Renderer' => <<~JS,
-    const HTX = new Proxy(globalThis.HTX, {
-      get(target, property, receiver) {
-        console.warn('[DEPRECATED] Top-level HTX variable is deprecated: use globalThis.HTX instead')
-        return target[property]
-      }
-    });
-  JS
-
+  'Renderer' => '',
   'Component' => '',
 }.freeze
 
