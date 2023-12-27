@@ -461,11 +461,8 @@ module HTX
       baseProfile
       calcMode
       clipPathUnits
-      contentScriptType
-      contentStyleType
       diffuseConstant
       edgeMode
-      filterRes
       filterUnits
       glyphRef
       gradientTransform
@@ -513,7 +510,6 @@ module HTX
       targetY
       textLength
       viewBox
-      viewTarget
       xChannelSelector
       yChannelSelector
       zoomAndPan
