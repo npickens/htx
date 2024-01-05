@@ -124,7 +124,7 @@ export class Renderer {
     }
 
     if (!parentNode) {
-      // Root node, so nothing to do.
+      this.rootNode = node
     } else if (!currentNode || currentNode == parentNode) {
       parentNode.append(node)
     } else if (node != currentNode) {
@@ -163,7 +163,6 @@ export class Renderer {
     }
 
     if (this._staticKeys.get(this._currentNode) == 1) {
-      this.rootNode = this._currentNode
       this._dynamicIndex = this._dynamicIndexTmp
       delete this._dynamicIndexTmp
     }
