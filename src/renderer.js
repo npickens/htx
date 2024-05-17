@@ -113,14 +113,15 @@ export class Renderer {
         v = v.filter(Boolean).join(' ') || null
       }
 
-      // Needed in (non-latest versions of) Safari to refresh the state of the parent <select> tag
-      // (setAttribute alone doesn't trigger it).
-      if (node.tagName == 'OPTION' && k == 'selected') {
-        node[k] = v
-      }
+      let empty = v === null || v === undefined
 
-      v === false || v === null || v === undefined ? node.removeAttribute(k) :
-        node.setAttribute(k, v === true ? '' : v)
+      // setAttribute doesn't always behave as expected with input values / selection state, so set the
+      // property directly.
+      if ((node.tagName == 'INPUT' && k == 'value') || (node.tagName == 'OPTION' && k == 'selected')) {
+        node[k] = empty ? null : v
+      } else {
+        empty || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+      }
     }
 
     if (!parentNode) {
