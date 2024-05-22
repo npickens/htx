@@ -24,5 +24,5 @@ Gem::Specification.new('htx', version) do |spec|
 
   spec.add_runtime_dependency('nokogiri', '~> 1.13')
   spec.add_development_dependency('bundler', '~> 2.0')
-  spec.add_development_dependency('minitest', '>= 5.11.2', '< 6.0.0')
+  spec.add_development_dependency('minitest', '~> 5.21')
 end

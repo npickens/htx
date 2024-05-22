@@ -13,7 +13,7 @@ class HTXTest < Minitest::Test
 
   context(HTX, '::compile') do
     test('creates a Template instance and calls #compile on it') do
-      mock = MiniTest::Mock.new
+      mock = Minitest::Mock.new
       mock.expect(:compile, nil)
 
       HTX::Template.stub(:new, mock) do
