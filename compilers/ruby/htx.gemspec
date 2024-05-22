@@ -12,15 +12,12 @@ Gem::Specification.new('htx', version) do |spec|
   spec.license       = 'MIT'
   spec.files         = Dir['lib/**/*.rb', 'LICENSE', 'README.md', 'VERSION']
 
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-    spec.metadata['homepage_uri'] = spec.homepage
-    spec.metadata['source_code_uri'] = spec.homepage
-  else
-    raise('RubyGems 2.0 or newer is required to protect against public gem pushes.')
-  end
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
+  spec.metadata['homepage_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = spec.homepage
 
   spec.required_ruby_version = '>= 2.6.0'
+  spec.required_rubygems_version = '>= 2.0.0'
 
   spec.add_runtime_dependency('nokogiri', '~> 1.13')
   spec.add_development_dependency('bundler', '~> 2.0')
