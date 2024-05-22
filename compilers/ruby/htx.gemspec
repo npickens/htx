@@ -16,7 +16,7 @@ Gem::Specification.new('htx', version) do |spec|
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
 
-  spec.required_ruby_version = '>= 2.6.0'
+  spec.required_ruby_version     = '>= 3.0.0'
   spec.required_rubygems_version = '>= 2.0.0'
 
   spec.add_runtime_dependency('nokogiri', '~> 1.13')
