@@ -12,9 +12,11 @@ Gem::Specification.new('htx', version) do |spec|
   spec.license       = 'MIT'
   spec.files         = Dir['lib/**/*.rb', 'LICENSE', 'README.md', 'VERSION']
 
-  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-  spec.metadata['homepage_uri'] = spec.homepage
-  spec.metadata['source_code_uri'] = spec.homepage
+  spec.metadata      = {
+    'bug_tracker_uri' => 'https://github.com/npickens/htx/issues',
+    'documentation_uri' => "https://github.com/npickens/htx/blob/#{version}/README.md",
+    'source_code_uri' => "https://github.com/npickens/htx/tree/#{version}",
+  }
 
   spec.required_ruby_version     = '>= 3.0.0'
   spec.required_rubygems_version = '>= 2.0.0'
