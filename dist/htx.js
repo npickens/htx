@@ -1,9 +1,9 @@
 /**
  * HTX.Renderer
- * Copyright 2019-2023 Nate Pickens
+ * Copyright 2019-2024 Nate Pickens
  *
  * @license MIT
- * @version 0.1.1
+ * @version 1.0.0
  */
 (HTX => {
   const ELEMENT   = 1 << 0
@@ -12,14 +12,6 @@
   const FLAG_BITS = 3
 
   class Renderer {
-    static templateResolver(template, context, isComponent = false) {
-      let templateFcn = typeof template == 'string' ? ((typeof HTX != 'undefined' && HTX.templates) ||
-        globalThis)[template] : template
-
-      if (!templateFcn) throw `Template not found: ${template}`
-      return new templateFcn(context)
-    }
-
     constructor(template, context) {
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
@@ -103,15 +95,17 @@
           v = v.filter(Boolean).join(' ') || null
         }
 
-        if (node.tagName == 'OPTION' && k == 'selected') {
-          node[k] = v
-        }
+        let empty = v === null || v === undefined
 
-        v === false || v === null || v === undefined ? node.removeAttribute(k) :
-          node.setAttribute(k, v === true ? '' : v)
+        if ((node.tagName == 'INPUT' && k == 'value') || (node.tagName == 'OPTION' && k == 'selected')) {
+          node[k] = empty ? null : v
+        } else {
+          empty || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+        }
       }
 
       if (!parentNode) {
+        this.rootNode = node
       } else if (!currentNode || currentNode == parentNode) {
         parentNode.append(node)
       } else if (node != currentNode) {
@@ -140,7 +134,6 @@
       }
 
       if (this._staticKeys.get(this._currentNode) == 1) {
-        this.rootNode = this._currentNode
         this._dynamicIndex = this._dynamicIndexTmp
         delete this._dynamicIndexTmp
       }
@@ -150,26 +143,13 @@
   HTX.Renderer = Renderer
 })(globalThis.HTX ||= {});
 
-globalThis.HTX = Object.assign(function(template, context) {
-  console.warn('[DEPRECATED] new HTX(...) is deprecated: directly instantiate template instead [e.g. ' +
-    'new templateFcn(context)]')
-
-  return globalThis.HTX.Renderer.templateResolver(template, context)
-}, globalThis.HTX ||= {});
-
-const HTX = new Proxy(globalThis.HTX, {
-  get(target, property, receiver) {
-    console.warn('[DEPRECATED] Top-level HTX variable is deprecated: use globalThis.HTX instead')
-    return target[property]
-  }
-});
 
 /**
  * HTX.Component
- * Copyright 2019-2023 Nate Pickens
+ * Copyright 2019-2024 Nate Pickens
  *
  * @license MIT
- * @version 0.1.1
+ * @version 1.0.0
  */
 (HTX => {
   let isMounting
@@ -187,12 +167,7 @@ const HTX = new Proxy(globalThis.HTX, {
 
   class Component {
     constructor(template) {
-      if (typeof template == 'string') {
-        console.warn('[DEPRECATED] Passing a template name to the HTX.Component constructor is ' +
-          'deprecated: pass a direct template function reference instead')
-      }
-
-      this.template = HTX.Renderer.templateResolver(template, this, true)
+      this.template = new template(this)
     }
 
     render() {
@@ -232,13 +207,3 @@ const HTX = new Proxy(globalThis.HTX, {
   HTX.Component = Component
 })(globalThis.HTX ||= {});
 
-const HTXComponent = new Proxy(globalThis.HTX.Component, {
-  get(target, property, receiver) {
-    if (property == 'prototype') {
-      console.warn('[DEPRECATED] Top-level HTXComponent variable is deprecated: use ' +
-        'globalThis.HTX.Component instead')
-    }
-
-    return target[property]
-  }
-});
