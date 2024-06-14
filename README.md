@@ -501,8 +501,8 @@ section.
 ### HTX.Component
 
 The `HTX.Component` class is a small and optional part of HTX, serving as a base class designed to be
-extended by various component classes. The constructor takes the an HTX template function to be used by the
-component.
+extended by various component classes. The constructor takes an HTX template function which is used to
+render the component.
 
 ```javascript
 import {Template} from '/components/crew.htx'
