@@ -17,7 +17,6 @@ export class Renderer {
   constructor(template, context) {
     this._staticKeys = new WeakMap
     this._dynamicKeys = new WeakMap
-    this._dynamicIndex = {}
   }
 
   /**
@@ -43,7 +42,8 @@ export class Renderer {
     let fullKey = `${staticKey}:${dynamicKey}`
 
     if (staticKey == 1) {
-      this._dynamicIndexTmp = {}
+      this._previousDynamicIndex = new WeakRef(this._dynamicIndex || {})
+      this._dynamicIndex = {}
     } else if (currentNode == parentNode) {
       currentNode = parentNode.firstChild
     } else {
@@ -64,7 +64,7 @@ export class Renderer {
     // If there's a dynamic key but the current node isn't a match, find any potential existing node and
     // move it to the current position.
     if (dynamicKey && staticKeyMatch && !exists) {
-      let existingNode = this._dynamicIndex[fullKey]
+      let existingNode = this._previousDynamicIndex[fullKey]
 
       if (existingNode) {
         currentNode.parentNode.insertBefore(existingNode, currentNode)
@@ -102,7 +102,7 @@ export class Renderer {
       this._dynamicKeys.set(node, dynamicKey)
     }
 
-    if (dynamicKey) this._dynamicIndexTmp[fullKey] = node
+    if (dynamicKey) this._dynamicIndex[fullKey] = node
 
     // Add/update the node's attributes.
     for (let i = 0; i < args.length - 2; i += 2) {
@@ -161,11 +161,6 @@ export class Renderer {
 
       this._currentNode = this._parentNode
       this._parentNode = this._parentNode.parentNode
-    }
-
-    if (this._staticKeys.get(this._currentNode) == 1) {
-      this._dynamicIndex = this._dynamicIndexTmp
-      delete this._dynamicIndexTmp
     }
   }
 }
