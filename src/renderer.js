@@ -8,13 +8,11 @@ const FLAG_BITS = 3
  */
 export class Renderer {
   /**
-   * Creates a new HTX instance.
+   * Creates a new Renderer instance.
    *
    * @constructor
-   * @param template Name of or direct reference to a template function.
-   * @param context Context (`this` binding) for the template function call.
    */
-  constructor(template, context) {
+  constructor() {
     this._staticKeys = new WeakMap
     this._dynamicKeys = new WeakMap
   }
