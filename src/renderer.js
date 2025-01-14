@@ -115,7 +115,10 @@ export class Renderer {
 
       // setAttribute doesn't always behave as expected with input values / selection state, so set the
       // property directly.
-      if ((node.tagName == 'INPUT' && k == 'value') || (node.tagName == 'OPTION' && k == 'selected')) {
+      if (
+        (node.tagName == 'INPUT' && (k == 'value' || k == 'checked')) ||
+        (node.tagName == 'OPTION' && k == 'selected')
+      ) {
         node[k] = empty ? null : v
       } else {
         empty || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
