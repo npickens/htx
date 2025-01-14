@@ -17,7 +17,7 @@ error = nil
 
 [
   ['TAG_MAP', 'Element', '.main-page-content > section > div.section-content > ul > li > a > code'],
-  ['ATTR_MAP', 'Attribute', '.main-page-content > section > div.section-content > ul > li > code > a'],
+  ['ATTR_MAP', 'Attribute', '.main-page-content > section > div.section-content > ul > li > a > code'],
 ].each do |(const, page, selector)|
   old_items = []
   new_items = []
