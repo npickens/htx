@@ -80,6 +80,21 @@ module HTX
       @compiled
     end
 
+    ##
+    # Returns high-level object info string.
+    #
+    def inspect
+      "#<#{self.class} "\
+        "@as_module=#{@as_module.inspect}, "\
+        "@assign_to=#{@assign_to.inspect}, "\
+        "@base_indent=#{@base_indent.inspect}, "\
+        "@compiled=#{@compiled&.sub(/\n[\s\S]+/, ' [...]').inspect}, "\
+        "@content=#{@content&.sub(/\n[\s\S]+/, ' [...]').inspect}, "\
+        "@import_path=#{@import_path.inspect}, "\
+        "@name=#{@name.inspect}"\
+      '>'
+    end
+
     private
 
     ##

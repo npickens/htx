@@ -334,6 +334,27 @@ class HTXTest < Minitest::Test
     end
   end
 
+  ########################################################################################################
+  ## #inspect                                                                                           ##
+  ########################################################################################################
+
+  context(HTX::Template, '#inspect') do
+    test('returns a high-level object info string') do
+      template = HTX::Template.new('/inspect.htx', '<div>Hello, World!</div>')
+      template.compile
+
+      assert_inspect('#<HTX::Template '\
+        '@as_module=false, '\
+        '@assign_to="globalThis", '\
+        '@base_indent="  ", '\
+        '@compiled="globalThis[\'/inspect.htx\'] = ((HTX) => { [...]", '\
+        '@content="<div>Hello, World!</div>", '\
+        '@import_path="/htx/htx.js", '\
+        '@name="/inspect.htx"'\
+      '>', template)
+    end
+  end
+
   ##########################################################################################################
   ## Helpers                                                                                              ##
   ##########################################################################################################
