@@ -1,12 +1,37 @@
 # frozen_string_literal: true
 
-require('minitest')
+require('minitest/autorun')
 
 module TestHelper
   INSPECT_SPLIT = /@(?=\w+=)/.freeze
   INSPECT_JOIN = "\n@"
 
   MINITEST_TEST_METHOD_REGEX = /^test_/.freeze
+
+  @test_names = {}
+  @test_numbers = {}
+
+  class << self
+    attr_accessor(:test_names)
+    attr_accessor(:test_numbers)
+  end
+
+  # Run a specific test by its auto-generated number (shown in failure output). Test order is still
+  # randomized, but a test's number is consistent across runs so long as tests aren't added, removed, or
+  # renamed.
+  #
+  #   Example: bin/test 123
+  #
+  if ARGV[0]&.match?(/^\d+$/)
+    at_exit do
+      if (test_name = TestHelper.test_names[ARGV[0].to_i])
+        ARGV[0] = test_name
+        ARGV.unshift('-n')
+      else
+        abort("Test number #{ARGV[0]} doesn't exist")
+      end
+    end
+  end
 
   ##########################################################################################################
   ## Testing                                                                                              ##
@@ -26,6 +51,9 @@ module TestHelper
     def test(description, &block)
       method_name = "#{context_string} #{description}"
       test_methods << method_name
+
+      TestHelper.test_names[TestHelper.test_names.size + 1] = method_name
+      TestHelper.test_numbers[method_name] = TestHelper.test_numbers.size + 1
 
       define_method(method_name, &block)
     end
@@ -70,7 +98,7 @@ module TestHelper
 
   class Minitest::Result
     def location
-      super.delete_prefix("#{self.class_name}#")
+      super.delete_prefix("#{class_name}#").prepend("[##{TestHelper.test_numbers[self.name]}] ")
     end
   end
 end
