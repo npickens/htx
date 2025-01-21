@@ -10,10 +10,11 @@ Gem::Specification.new('htx', version) do |spec|
                        'compiler--it converts HTX templates to their compiled JavaScript form.'
   spec.homepage      = 'https://github.com/npickens/htx'
   spec.license       = 'MIT'
-  spec.files         = Dir['lib/**/*.rb', 'LICENSE', 'README.md', 'VERSION']
+  spec.files         = Dir['lib/**/*.rb', 'CHANGELOG.md', 'LICENSE', 'README.md', 'VERSION']
 
   spec.metadata      = {
     'bug_tracker_uri' => 'https://github.com/npickens/htx/issues',
+    'changelog_uri' => 'https://github.com/npickens/htx/blob/master/CHANGELOG.md',
     'documentation_uri' => "https://github.com/npickens/htx/blob/#{version}/README.md",
     'source_code_uri' => "https://github.com/npickens/htx/tree/#{version}",
   }

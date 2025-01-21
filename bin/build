@@ -17,6 +17,7 @@ GEMSPEC_FILES = (Dir[File.join(RUBY_DIR, '*.gemspec')] +
   Dir[File.join(RUBY_DIR, "#{LIB_NAME}-*", '*.gemspec')]).freeze
 VERSION_FILES = Dir[File.join("{#{BASE_DIR},#{RUBY_DIR}}", 'VERSION')].freeze
 VERSION_FILE_RUBY = File.join(RUBY_DIR, 'lib', LIB_NAME, 'version.rb').freeze
+CHANGELOG_FILE = File.join(BASE_DIR, 'CHANGELOG.md').freeze
 TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
@@ -194,6 +195,20 @@ def write_sizes
   File.write(SIZES_FILE, "#{JSON.pretty_generate(data).gsub(/\[\s*(\d+),\s*(\d+)\s*\]/, '[\\1, \\2]')}\n")
 end
 
+def update_changelog
+  content = File.read(CHANGELOG_FILE)
+  content.sub!("## Upcoming (Unreleased)\n",
+    <<~MARKDOWN
+      \\0
+      * Nothing yet
+
+      ## #{NEW_VERSION} (#{Time.now.strftime('%Y %B %-d')})
+    MARKDOWN
+  )
+
+  File.write(CHANGELOG_FILE, content)
+end
+
 ############################################################################################################
 ## Utils                                                                                                  ##
 ############################################################################################################
@@ -235,6 +250,7 @@ begin
   build_ruby
   build_javascript
   write_sizes
+  update_changelog
 ensure
   (update_version(OLD_VERSION, :quiet) rescue nil) if $!
 end
