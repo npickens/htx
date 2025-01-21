@@ -2,6 +2,10 @@
 
 ## Upcoming (Unreleased)
 
+* Nothing yet
+
+## 1.0.1 (2025 January 21)
+
 * Add inspect method to Ruby compiler Template class
 * **Set 'checked' property on input elements instead of calling `setAttribute`**
 * Remove no-longer-used Renderer constructor parameters

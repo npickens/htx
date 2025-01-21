@@ -1,9 +1,9 @@
 /**
  * HTX.Renderer
- * Copyright 2019-2024 Nate Pickens
+ * Copyright 2019-2025 Nate Pickens
  *
  * @license MIT
- * @version 1.0.0
+ * @version 1.0.1
  */
 (HTX => {
   const ELEMENT   = 1 << 0
@@ -12,10 +12,9 @@
   const FLAG_BITS = 3
 
   class Renderer {
-    constructor(template, context) {
+    constructor() {
       this._staticKeys = new WeakMap
       this._dynamicKeys = new WeakMap
-      this._dynamicIndex = {}
     }
 
     node(object, ...args) {
@@ -30,7 +29,8 @@
       let fullKey = `${staticKey}:${dynamicKey}`
 
       if (staticKey == 1) {
-        this._dynamicIndexTmp = {}
+        this._previousDynamicIndex = new WeakRef(this._dynamicIndex || {})
+        this._dynamicIndex = {}
       } else if (currentNode == parentNode) {
         currentNode = parentNode.firstChild
       } else {
@@ -47,7 +47,7 @@
       let exists = staticKeyMatch && this._dynamicKeys.get(currentNode) == dynamicKey
 
       if (dynamicKey && staticKeyMatch && !exists) {
-        let existingNode = this._dynamicIndex[fullKey]
+        let existingNode = this._previousDynamicIndex[fullKey]
 
         if (existingNode) {
           currentNode.parentNode.insertBefore(existingNode, currentNode)
@@ -85,7 +85,7 @@
         this._dynamicKeys.set(node, dynamicKey)
       }
 
-      if (dynamicKey) this._dynamicIndexTmp[fullKey] = node
+      if (dynamicKey) this._dynamicIndex[fullKey] = node
 
       for (let i = 0; i < args.length - 2; i += 2) {
         let k = args[i]
@@ -97,7 +97,10 @@
 
         let empty = v === null || v === undefined
 
-        if ((node.tagName == 'INPUT' && k == 'value') || (node.tagName == 'OPTION' && k == 'selected')) {
+        if (
+          (node.tagName == 'INPUT' && (k == 'value' || k == 'checked')) ||
+          (node.tagName == 'OPTION' && k == 'selected')
+        ) {
           node[k] = empty ? null : v
         } else {
           empty || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
@@ -131,11 +134,6 @@
 
         this._currentNode = this._parentNode
         this._parentNode = this._parentNode.parentNode
-      }
-
-      if (this._staticKeys.get(this._currentNode) == 1) {
-        this._dynamicIndex = this._dynamicIndexTmp
-        delete this._dynamicIndexTmp
       }
     }
   }

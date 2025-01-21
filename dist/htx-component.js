@@ -1,9 +1,9 @@
 /**
  * HTX.Component
- * Copyright 2019-2024 Nate Pickens
+ * Copyright 2019-2025 Nate Pickens
  *
  * @license MIT
- * @version 1.0.0
+ * @version 1.0.1
  */
 (HTX => {
   let isMounting
