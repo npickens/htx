@@ -5,8 +5,8 @@ HTX is a full-featured HTML template system that is simple, lightweight, and hig
 1. **Template Syntax** — A simple combination of HTML and JavaScript. No sugar added.
 2. **Compilation** — Templates are precompiled to JavaScript. A DOM both generated and manipulated by
    JavaScript is a consistent DOM.
-3. **JavaScript Library** — Small bit of code (1KB minified and gzipped) called by compiled template
-   functions to very efficiently render and update the DOM in place. No virtual DOM necessary.
+3. **JavaScript Library** — Small bit of code (less than 1KB minified and gzipped) called by compiled
+   template functions to very efficiently render and update the DOM in place. No virtual DOM necessary.
 
 ## Overview
 
