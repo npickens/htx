@@ -52,6 +52,10 @@ module TestHelper
       method_name = "#{context_string} #{description}"
       test_methods << method_name
 
+      if TestHelper.test_numbers.key?(method_name)
+        raise("Duplicate test name: #{method_name.inspect}")
+      end
+
       TestHelper.test_names[TestHelper.test_names.size + 1] = method_name
       TestHelper.test_numbers[method_name] = TestHelper.test_numbers.size + 1
 
