@@ -18,6 +18,7 @@ GEMSPEC_FILES = (Dir[File.join(RUBY_DIR, '*.gemspec')] +
 VERSION_FILES = Dir[File.join("{#{BASE_DIR},#{RUBY_DIR}}", 'VERSION')].freeze
 VERSION_FILE_RUBY = File.join(RUBY_DIR, 'lib', LIB_NAME, 'version.rb').freeze
 CHANGELOG_FILE = File.join(BASE_DIR, 'CHANGELOG.md').freeze
+CHANGELOG_FILE_FOR_GEM = File.join(RUBY_DIR, File.basename(CHANGELOG_FILE)).freeze
 TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
 
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
@@ -207,6 +208,7 @@ def update_changelog
   )
 
   File.write(CHANGELOG_FILE, content)
+  File.write(CHANGELOG_FILE_FOR_GEM, content)
 end
 
 ############################################################################################################
@@ -245,14 +247,15 @@ end
 install_dependencies
 test
 update_version
+update_changelog
 
 begin
   build_ruby
   build_javascript
   write_sizes
-  update_changelog
 ensure
   (update_version(OLD_VERSION, :quiet) rescue nil) if $!
+  FileUtils.rm_f(CHANGELOG_FILE_FOR_GEM)
 end
 
 finish_task("Version #{NEW_VERSION} built successfully!")
