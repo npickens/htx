@@ -8,48 +8,66 @@ require('nokogiri')
 require('open-uri')
 
 BASE_DIR = Dir.pwd.freeze
-CODE_FILE = File.join(BASE_DIR, 'lib', 'htx', 'template.rb').freeze
+CODE_FILE = File.join('lib', 'htx', 'template.rb').freeze
+CODE_FILE_ABSOLUTE = File.join(BASE_DIR, CODE_FILE).freeze
 MOZILLA_BASE_URL = 'https://developer.mozilla.org/en-US/docs/Web/SVG/'
-MAX_LINE_LENGTH = 108
 
-code = File.read(CODE_FILE)
+code = File.read(CODE_FILE_ABSOLUTE)
 error = nil
 
 [
-  ['TAG_MAP', 'Element', '.main-page-content > section > div.section-content > ul > li > a > code'],
-  ['ATTR_MAP', 'Attribute', '.main-page-content > section > div.section-content > ul > li > a > code'],
-].each do |(const, page, selector)|
-  old_items = []
-  new_items = []
+  ['TAG_MAP', 'Element', [
+    '.main-page-content > section > div.section-content > ul > li > a > code',
+    'a[href^="/en-US/docs/Web/SVG/Element/"] > code',
+    'a[data-href^="/en-US/docs/Web/SVG/Element/"] > code',
+  ]],
 
-  code = code.sub(/^( *)#{const} = %w\[\s*([^\]]+)\]/) do
-    const_indent = $1
-    old_items = $2.split(/\s+/)
+  ['ATTR_MAP', 'Attribute', [
+    '.main-page-content > section > div.section-content > ul > li > a > code',
+    'a[href^="/en-US/docs/Web/SVG/Attribute/"] > code',
+    'a[data-href^="/en-US/docs/Web/SVG/Attribute/"] > code',
+  ]],
+].each do |(const, page, selectors)|
+  match = code.match(/^( *)#{const} = %w\[\s*([^\]]+)\]/)
+
+  if match
+    const_indent = match[1]
     item_indent = "#{const_indent}  "
-
-    doc = Nokogiri::HTML(URI.open("#{MOZILLA_BASE_URL}#{page}"))
-    new_items = doc.css(selector)
-               .map { |n| n.text.delete_prefix('<').delete_suffix('>') }
-               .select { |t| t.match?(/[A-Z]/) }
-               .sort
-
-    "#{const_indent}#{const} = %w[\n#{item_indent}#{new_items.join("\n#{item_indent}")}\n#{const_indent}]"
+    old_items = match[2].split(/\s+/)
+    new_items = old_items.dup
   end
 
-  removed = old_items - new_items
+  if !match || old_items.empty?
+    warn("\e[31m\u2718\e[39m #{const} not updated in #{CODE_FILE}: could not find definition")
+    error = true
+    next
+  end
+
+  doc = Nokogiri::HTML(URI.open("#{MOZILLA_BASE_URL}#{page}"))
+  selectors.each do |selector|
+    new_items.concat(
+      doc.css(selector)
+         .map { |n| n.text.delete_prefix('<').delete_suffix('>').delete_prefix('SVG attribute: ') }
+         .grep(/[A-Z]/)
+         .sort
+    )
+  end
+
+  new_items.uniq!
+  new_items.sort!
+
+  code[match.begin(0)...match.end(0)] =
+    "#{const_indent}#{const} = %w[\n" \
+    "#{item_indent}#{new_items.join("\n#{item_indent}")}\n" \
+    "#{const_indent}]"
+
   added = new_items - old_items
 
-  if old_items.empty?
-    $stderr.puts("\e[31m\u2718 #{const} not updated in #{CODE_FILE} (could not find definition)\e[39m")
-    error = true
-  elsif !removed.empty? || !added.empty?
-    puts("\e[32m\u2714 #{const} updated in #{CODE_FILE}\e[39m")
-    puts("  REMOVED: #{removed.empty? ? '[none]' : removed.join(', ')}")
-    puts("  ADDED: #{added.empty? ? '[none]' : added.join(', ')}")
-  else
-    puts("\u2714 #{const} up to date in #{CODE_FILE}")
-  end
+  puts("\e[32m\u2714\e[39m #{const} #{added.empty? ? 'up to date' : 'updated'} in #{CODE_FILE}\e[39m")
+  added.each { |a| puts("  \e[32m+\e[39m #{a}") }
 end
 
-File.write(CODE_FILE, code)
-exit(1) if error
+unless error
+  File.write(CODE_FILE_ABSOLUTE, code)
+  exit(1)
+end

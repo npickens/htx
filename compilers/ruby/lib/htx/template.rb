@@ -463,6 +463,7 @@ module HTX
       feTile
       feTurbulence
       foreignObject
+      glyphRef
       linearGradient
       radialGradient
       textPath
@@ -472,6 +473,7 @@ module HTX
     ATTR_MAP = %w[
       attributeName
       attributeType
+      autoReverse
       baseFrequency
       baseProfile
       calcMode
