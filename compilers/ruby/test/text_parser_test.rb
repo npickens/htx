@@ -26,96 +26,88 @@ class TextParserTest < Minitest::Test
     refute(parse("Not a statement: #{text}", statement_allowed: true).statement?)
   end
 
-  context(HTX::TextParser, '#statement?') do
-    test('returns true if text contains open curly brace')                { assert_statement('{') }
-    test('returns true if text contains close curly brace')               { assert_statement('}') }
-    test('returns true if text contains plain assignment')                { assert_statement('i = 1') }
-    test('returns true if text contains addition assignment')             { assert_statement('i += 1') }
-    test('returns true if text contains bitwise AND assignment')          { assert_statement('i &= 1') }
-    test('returns true if text contains bitwise OR assignment')           { assert_statement('i |= 1') }
-    test('returns true if text contains bitwise XOR assignment')          { assert_statement('i ^= 1') }
-    test('returns true if text contains division assignment')             { assert_statement('i /= 2') }
-    test('returns true if text contains exponentiation assignment')       { assert_statement('i **= 2') }
-    test('returns true if text contains left shift assignment')           { assert_statement('i <<= 1') }
-    test('returns true if text contains logical AND assignment')          { assert_statement('i &&= 1') }
-    test('returns true if text contains logical nullish assignment')      { assert_statement('i ??= 1') }
-    test('returns true if text contains logical OR assignment')           { assert_statement('i ||= 1') }
-    test('returns true if text contains multiplication assignment')       { assert_statement('i *= 2') }
-    test('returns true if text contains remainder assignment')            { assert_statement('i %= 2') }
-    test('returns true if text contains subtraction assignment')          { assert_statement('i -= 1') }
-    test('returns true if text contains unsigned right shift assignment') { assert_statement('i >>>= 1') }
-    test('returns true if text contains increment operator')              { assert_statement('i++') }
-    test('returns true if text contains decrement operator')              { assert_statement('i--') }
-    test('returns true if text contains function call')                   { assert_statement('func()') }
-    test('returns true if text contains object reference')                { assert_statement('obj[i]') }
+  test('#statement? returns true for an open curly brace')                  { assert_statement('{') }
+  test('#statement? returns true for a close curly brace')                  { assert_statement('}') }
+  test('#statement? returns true for a plain assignment')                   { assert_statement('i = 1') }
+  test('#statement? returns true for an addition assignment')               { assert_statement('i += 1') }
+  test('#statement? returns true for a bitwise AND assignment')             { assert_statement('i &= 1') }
+  test('#statement? returns true for a bitwise OR assignment')              { assert_statement('i |= 1') }
+  test('#statement? returns true for a bitwise XOR assignment')             { assert_statement('i ^= 1') }
+  test('#statement? returns true for a division assignment')                { assert_statement('i /= 2') }
+  test('#statement? returns true for an exponentiation assignment')         { assert_statement('i **= 2') }
+  test('#statement? returns true for a left shift assignment')              { assert_statement('i <<= 1') }
+  test('#statement? returns true for a logical AND assignment')             { assert_statement('i &&= 1') }
+  test('#statement? returns true for a logical nullish assignment')         { assert_statement('i ??= 1') }
+  test('#statement? returns true for a logical OR assignment')              { assert_statement('i ||= 1') }
+  test('#statement? returns true for a multiplication assignment')          { assert_statement('i *= 2') }
+  test('#statement? returns true for a remainder assignment')               { assert_statement('i %= 2') }
+  test('#statement? returns true for a subtraction assignment')             { assert_statement('i -= 1') }
+  test('#statement? returns true for an unsigned right shift assignment')   { assert_statement('i >>>= 1') }
+  test('#statement? returns true for an increment operator')                { assert_statement('i++') }
+  test('#statement? returns true for a decrement operator')                 { assert_statement('i--') }
+  test('#statement? returns true for a function call')                      { assert_statement('func()') }
+  test('#statement? returns true for an object reference')                  { assert_statement('obj[i]') }
 
-    test('returns false if statement is inside an interpolation') { refute_statement('${i = 1}') }
-    test('returns false if text contains semicolon')              { refute_statement(';') }
-    test('returns false if text contains open parenthesis')       { refute_statement('(') }
-    test('returns false if text contains close parenthesis')      { refute_statement(')') }
-  end
+  test('#statement? returns false for a statement inside an interpolation') { refute_statement('${i = 1}') }
+  test('#statement? returns false for a semicolon')                         { refute_statement(';') }
+  test('#statement? returns false for an open parenthesis')                 { refute_statement('(') }
+  test('#statement? returns false for a close parenthesis')                 { refute_statement(')') }
 
   ##########################################################################################################
   ## #raw?                                                                                                ##
   ##########################################################################################################
 
-  context(HTX::TextParser, '#raw?') do
-    test('returns true if text contains single interpolation') do
-      assert(parse('${function() { return "Hello, World!" }()}').raw?)
-    end
+  test('#raw? returns true if text contains single interpolation') do
+    assert(parse('${function() { return "Hello, World!" }()}').raw?)
+  end
 
-    test('returns true if text contains single interpolation with whitespace') do
-      assert(parse('  ${function() { return "Hello, World!" }()}  ').raw?)
-    end
+  test('#raw? returns true if text contains single interpolation with whitespace') do
+    assert(parse('  ${function() { return "Hello, World!" }()}  ').raw?)
+  end
 
-    test('returns false if text contains multiple interpolations') do
-      refute(parse('${function() { return "Hello" }()}${", World!"}').raw?)
-    end
+  test('#raw? returns false if text contains multiple interpolations') do
+    refute(parse('${function() { return "Hello" }()}${", World!"}').raw?)
+  end
 
-    test('returns false if text contains single interpolation with text') do
-      refute(parse('${function() { return "Hello" }()}, World!').raw?)
-    end
+  test('#raw? returns false if text contains single interpolation with text') do
+    refute(parse('${function() { return "Hello" }()}, World!').raw?)
   end
 
   ##########################################################################################################
   ## #template?                                                                                           ##
   ##########################################################################################################
 
-  context(HTX::TextParser, '#template?') do
-    test('returns true if text contains regular text') do
-      assert(parse('Hello, World!').template?)
-    end
+  test('#template? returns true if text contains regular text') do
+    assert(parse('Hello, World!').template?)
+  end
 
-    test('returns true if text contains regular text and an interpolation') do
-      assert(parse('Hello, ${`World!`}').template?)
-    end
+  test('#template? returns true if text contains regular text and an interpolation') do
+    assert(parse('Hello, ${`World!`}').template?)
+  end
 
-    test('returns true if text contains single empty interpolation') do
-      assert(parse('${}').template?)
-    end
+  test('#template? returns true if text contains single empty interpolation') do
+    assert(parse('${}').template?)
   end
 
   ##########################################################################################################
   ## Formatting                                                                                           ##
   ##########################################################################################################
 
-  context(HTX::TextParser, '#parse') do
-    test('outdents template string') do
-      text = "`
-        line 1
-          line 2
-      `"
+  test('#parse outdents template string') do
+    text = "`
+      line 1
+        line 2
+    `"
 
-      assert_equal("`\nline 1\n  line 2\n`", parse(text).content)
-    end
+    assert_equal("`\nline 1\n  line 2\n`", parse(text).content)
+  end
 
-    test('does not outdent single interpolation') do
-      text = "${
-        line 1
-          line 2
-      }"
+  test('#parse does not outdent single interpolation') do
+    text = "${
+      line 1
+        line 2
+    }"
 
-      assert_equal("\n        line 1\n          line 2\n      ", parse(text).content)
-    end
+    assert_equal("\n      line 1\n        line 2\n    ", parse(text).content)
   end
 end
