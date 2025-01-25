@@ -41,7 +41,7 @@ NEW_VERSION =
   end
 
 DEPENDENCIES = [
-  ['Homebrew',  'which brew || which npm',        '/bin/bash -c "$(curl -fsSL '\
+  ['Homebrew',  'which brew || which npm',        '/bin/bash -c "$(curl -fsSL ' \
     'https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"'].freeze,
   ['NPM',       'which npm',                      'brew install npm'].freeze,
   ['NPX',       'which npx',                      'npm install -g npx'].freeze,
@@ -151,8 +151,8 @@ def build_javascript
       File.write(dist_file, content)
     end
 
-    task(command: "npx terser #{dist_file} -c --comments /^$/ --mangle-props regex=/^_.*/ --format "\
-      "\"preamble='#{javascript_comment(full_lib_name, :minified)}'\" --output #{dist_file_min} && "\
+    task(command: "npx terser #{dist_file} -c --comments /^$/ --mangle-props regex=/^_.*/ --format " \
+      "\"preamble='#{javascript_comment(full_lib_name, :minified)}'\" --output #{dist_file_min} && " \
       "echo '' >> #{dist_file_min}")
 
 

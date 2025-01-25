@@ -15,7 +15,9 @@ module HTX
   @import_path = '/htx/htx.js'
   @assign_to = 'globalThis'
 
-  class << self; attr_accessor(:as_module, :import_path, :assign_to); end
+  class << self
+    attr_accessor(:as_module, :import_path, :assign_to)
+  end
 
   ##
   # Convenience method to create a new Template instance and compile it.

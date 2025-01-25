@@ -13,23 +13,22 @@ class TemplateTest < Minitest::Test
 
   test('compiles a template') do
     name = '/crew.htx'
-    template = HTX::Template.new(name,
-      <<~EOS
-        <div class='crew'>
-          <h1>${this.title}</h1>
 
-          <ul class='members'>
-            for (let member of this.members) {
-              <li class='member ${member.role}'>
-                ${member.name}
-              </li>
-            }
-          </ul>
-        </div>
-      EOS
-    )
+    content = <<~HTML
+      <div class='crew'>
+        <h1>${this.title}</h1>
 
-    render_body = <<~EOS
+        <ul class='members'>
+          for (let member of this.members) {
+            <li class='member ${member.role}'>
+              ${member.name}
+            </li>
+          }
+        </ul>
+      </div>
+    HTML
+
+    render_body = <<~JS
       $renderer.node('div', 'class', `crew`, 9)
         $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
 
@@ -40,7 +39,9 @@ class TemplateTest < Minitest::Test
             $renderer.close()
           }
       $renderer.close(2)
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     assert_assign_render_body(render_body, name, template)
     assert_module_render_body(render_body, name, template)
@@ -55,21 +56,22 @@ class TemplateTest < Minitest::Test
 
   test('treats tags with only whitespace text as childless') do
     name = '/whitespace-childless.htx'
-    template = HTX::Template.new(name,
-      <<~EOS
-        <div>
-          <span>
 
-          </span>
-        </div>
-      EOS
-    )
+    content = <<~HTML
+      <div>
+        <span>
 
-    render_body = <<~EOS
+        </span>
+      </div>
+    HTML
+
+    render_body = <<~JS
       $renderer.node('div', 9)
         $renderer.node('span', 19)
       $renderer.close()
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     assert_assign_render_body(render_body, name, template)
     assert_module_render_body(render_body, name, template)
@@ -102,14 +104,15 @@ class TemplateTest < Minitest::Test
 
   test('raises an error if an unrecognized node type is encountered') do
     args = ['/unrecognized-node-type.htx', '<div><!-- Bad node --></div>']
+    template = HTX::Template.new(*args)
 
     assert_raises(HTX::MalformedTemplateError) do
-      template = HTX::Template.new(*args)
       template.stub(:preprocess, nil) { template.compile }
     end
 
+    template = HTX::Template.new(*args)
+
     assert_raises(HTX::MalformedTemplateError) do
-      template = HTX::Template.new(*args)
       template.stub(:preprocess, nil) { template.compile(as_module: true) }
     end
   end
@@ -129,22 +132,23 @@ class TemplateTest < Minitest::Test
 
   test('removes trailing newline of previous text node along with comment node') do
     name = '/comment-with-newline.htx'
-    template = HTX::Template.new(name,
-      <<~EOS
-        <div>
-          Hello,
-          <!-- Comment -->
-          World!
-        </div>
-      EOS
-    )
 
-    render_body = <<~EOS
+    content = <<~HTML
+      <div>
+        Hello,
+        <!-- Comment -->
+        World!
+      </div>
+    HTML
+
+    render_body = <<~JS
       $renderer.node('div', 9)
         $renderer.node(`Hello,
       World!`, 16)
       $renderer.close()
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     assert_assign_render_body(render_body, name, template)
     assert_module_render_body(render_body, name, template)
@@ -196,19 +200,20 @@ class TemplateTest < Minitest::Test
 
   test('maintains case of mixed-case SVG tag and attribute names when non-HTML5 parser is used') do
     name = '/case-sensitive-svg.htx'
-    template = HTX::Template.new(name,
-      <<~EOS
-        <svg xmlns='http://www.w3.org/2000/svg'>
-          <clipPath clipPathUnits='userSpaceOnUse'></clipPath>
-        </svg>
-      EOS
-    )
 
-    render_body = <<~EOS
+    content = <<~HTML
+      <svg xmlns='http://www.w3.org/2000/svg'>
+        <clipPath clipPathUnits='userSpaceOnUse'></clipPath>
+      </svg>
+    HTML
+
+    render_body = <<~JS
       $renderer.node('svg', 'xmlns', `http://www.w3.org/2000/svg`, 13)
         $renderer.node('clipPath', 'clipPathUnits', `userSpaceOnUse`, 23)
       $renderer.close()
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     HTX::Template.stub(:html5_parser?, false) do
       assert_assign_render_body(render_body, name, template)
@@ -251,7 +256,7 @@ class TemplateTest < Minitest::Test
 
   test('uses empty string for an attribute with no value') do
     name = '/empty-attribute-value.htx'
-    template = HTX::Template.new(name, "<div empty-attr></div>")
+    template = HTX::Template.new(name, '<div empty-attr></div>')
     render_body = "$renderer.node('div', 'empty-attr', ``, 11)"
 
     assert_assign_render_body(render_body, name, template)
@@ -274,21 +279,21 @@ class TemplateTest < Minitest::Test
   test('indents with leading space(s) of first indented line') do
     name = '/indent.htx'
 
-    template = HTX::Template.new(name,
-      <<~EOS
-        <div>
-           Hello,
-            <b>World!</b>
-        </div>
-      EOS
-    )
+    content = <<~HTML
+      <div>
+         Hello,
+          <b>World!</b>
+      </div>
+    HTML
 
-    render_body = <<~EOS
+    render_body = <<~JS
       $renderer.node('div', 9)
          $renderer.node(`Hello,`, 16)
           $renderer.node('b', 25); $renderer.node(`World!`, 32)
       $renderer.close(2)
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     assert_assign_render_body(render_body, name, template)
     assert_module_render_body(render_body, name, template)
@@ -296,21 +301,22 @@ class TemplateTest < Minitest::Test
 
   test('indents with leading tab(s) of first indented lineasdf') do
     name = '/tab-indent.htx'
-    template = HTX::Template.new(name,
-      <<~EOS
-        <div>
-        \tHello,
-        \t\t<b>World!</b>
-        </div>
-      EOS
-    )
 
-    render_body = <<~EOS
+    content = <<~HTML
+      <div>
+      \tHello,
+      \t\t<b>World!</b>
+      </div>
+    HTML
+
+    render_body = <<~JS
       $renderer.node('div', 9)
       \t$renderer.node(`Hello,`, 16)
       \t\t$renderer.node('b', 25); $renderer.node(`World!`, 32)
       $renderer.close(2)
-    EOS
+    JS
+
+    template = HTX::Template.new(name, content)
 
     assert_assign_render_body(render_body, name, template)
     assert_module_render_body(render_body, name, template)
@@ -324,14 +330,14 @@ class TemplateTest < Minitest::Test
     template = HTX::Template.new('/inspect.htx', '<div>Hello, World!</div>')
     template.compile
 
-    assert_inspect('#<HTX::Template '\
-      '@as_module=false, '\
-      '@assign_to="globalThis", '\
-      '@base_indent="  ", '\
-      '@compiled="globalThis[\'/inspect.htx\'] = ((HTX) => { [...]", '\
-      '@content="<div>Hello, World!</div>", '\
-      '@import_path="/htx/htx.js", '\
-      '@name="/inspect.htx"'\
+    assert_inspect('#<HTX::Template ' \
+      '@as_module=false, ' \
+      '@assign_to="globalThis", ' \
+      '@base_indent="  ", ' \
+      '@compiled="globalThis[\'/inspect.htx\'] = ((HTX) => { [...]", ' \
+      '@content="<div>Hello, World!</div>", ' \
+      '@import_path="/htx/htx.js", ' \
+      '@name="/inspect.htx"' \
     '>', template)
   end
 
@@ -355,7 +361,7 @@ class TemplateTest < Minitest::Test
     ) << (render_body[-1] == "\n" ? '' : "\n")
 
     if as_module
-      <<~EOS
+      <<~JS
         import * as HTX from '#{import_path}'
 
         function render($renderer) {
@@ -366,9 +372,9 @@ class TemplateTest < Minitest::Test
         export function Template(context) {
         #{indent}this.render = render.bind(context, new HTX.Renderer)
         }
-      EOS
+      JS
     else
-      <<~EOS
+      <<~JS
         #{assign_to}['#{name}'] = ((HTX) => {
         #{indent}function render($renderer) {
         #{indent * 2}#{render_body}
@@ -379,7 +385,7 @@ class TemplateTest < Minitest::Test
         #{indent}#{indent}this.render = render.bind(context, new HTX.Renderer)
         #{indent}}
         })(globalThis.HTX ||= {});
-      EOS
+      JS
     end
   end
 end

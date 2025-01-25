@@ -3,6 +3,9 @@
 require('nokogiri')
 
 module HTX
+  ##
+  # Represents an HTX template. A template can be compiled to its JavaScript form with the #compile method.
+  #
   class Template
     ELEMENT   = 1 << 0
     CHILDLESS = 1 << 1
@@ -84,14 +87,14 @@ module HTX
     # Returns high-level object info string.
     #
     def inspect
-      "#<#{self.class} "\
-        "@as_module=#{@as_module.inspect}, "\
-        "@assign_to=#{@assign_to.inspect}, "\
-        "@base_indent=#{@base_indent.inspect}, "\
-        "@compiled=#{@compiled&.sub(/\n[\s\S]+/, ' [...]').inspect}, "\
-        "@content=#{@content&.sub(/\n[\s\S]+/, ' [...]').inspect}, "\
-        "@import_path=#{@import_path.inspect}, "\
-        "@name=#{@name.inspect}"\
+      "#<#{self.class} " \
+        "@as_module=#{@as_module.inspect}, " \
+        "@assign_to=#{@assign_to.inspect}, " \
+        "@base_indent=#{@base_indent.inspect}, " \
+        "@compiled=#{@compiled&.sub(/\n[\s\S]+/, ' [...]').inspect}, " \
+        "@content=#{@content&.sub(/\n[\s\S]+/, ' [...]').inspect}, " \
+        "@import_path=#{@import_path.inspect}, " \
+        "@name=#{@name.inspect}" \
       '>'
     end
 
@@ -161,8 +164,11 @@ module HTX
     #
     def process_fragment_node(node)
       append("#{
-        @as_module ? "import * as HTX from '#{@import_path}'\n\n"
-                   : "#{@assign_to}['#{@name}'] = ((HTX) => {\n#{@indent}"
+        if @as_module
+          "import * as HTX from '#{@import_path}'\n\n"
+        else
+          "#{@assign_to}['#{@name}'] = ((HTX) => {\n#{@indent}"
+        end
       }function render($renderer) {\n")
 
       @indent = @base_indent * 2 unless @as_module
@@ -199,17 +205,18 @@ module HTX
     def process_element_node(node, xmlns: false)
       is_template = node.name == 'template'
       children = node.children
-      childless = children.empty? || (children.size == 1 && self.class.formatting_node?(children.first))
-      dynamic_key = self.class.attribute_value(node.attr(DYNAMIC_KEY_ATTR))
-      attributes = self.class.process_attributes(node, xmlns: xmlns)
-      xmlns ||= !!self.class.namespace(node)
+      childless = children.empty? || (children.size == 1 && formatting_node?(children.first))
+      dynamic_key = attribute_value(node.attr(DYNAMIC_KEY_ATTR))
+      attributes = process_attributes(node, xmlns: xmlns)
+      xmlns ||= !namespace(node).nil?
 
-      if self.class.htx_content_node?(node)
-        if attributes.size > 0
-          raise(MalformedTemplateError.new("<#{node.name}> tags may not have attributes other than "\
-            "#{DYNAMIC_KEY_ATTR}", @name, node))
-        elsif (child = children.find { |n| !n.text? })
-          raise(MalformedTemplateError.new("<#{node.name}> tags may not contain child tags", @name, child))
+      if htx_content_node?(node)
+        if !attributes.empty?
+          message = "<#{node.name}> tags may not have attributes other than #{DYNAMIC_KEY_ATTR}"
+          raise(MalformedTemplateError.new(message, @name, node))
+        elsif (non_text_child = children.find { |n| !n.text? })
+          message = "<#{node.name}> tags may not contain child tags"
+          raise(MalformedTemplateError.new(message, @name, non_text_child))
         end
 
         process_text_node(
@@ -219,7 +226,7 @@ module HTX
       else
         unless is_template
           append_htx_node(
-            "'#{self.class.tag_name(node.name)}'",
+            "'#{tag_name(node.name)}'",
             *attributes,
             dynamic_key,
             ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
@@ -254,7 +261,7 @@ module HTX
           @whitespace_buff = content[NEWLINE_END]
         end
       else
-        htx_content_node = self.class.htx_content_node?(node.parent)
+        htx_content_node = htx_content_node?(node.parent)
         parser = TextParser.new(content, statement_allowed: !htx_content_node)
         parser.parse
 
@@ -301,7 +308,7 @@ module HTX
         @statement_buff << @indent
       else
         unless @statement_buff.match?(AUTO_SEMICOLON_END) || text.match?(AUTO_SEMICOLON_BEGIN)
-          @statement_buff << ";"
+          @statement_buff << ';'
         end
 
         unless @statement_buff.empty? || text.match?(WHITESPACE_BEGIN)
@@ -351,7 +358,7 @@ module HTX
     #
     # * +node+ - Nokogiri node to check.
     #
-    def self.formatting_node?(node)
+    def formatting_node?(node)
       node.blank? && node.content.include?("\n")
     end
 
@@ -360,7 +367,7 @@ module HTX
     #
     # * +node+ - Nokogiri node to check.
     #
-    def self.htx_content_node?(node)
+    def htx_content_node?(node)
       node&.name == CONTENT_TAG
     end
 
@@ -369,7 +376,7 @@ module HTX
     #
     # * +node+ - Nokogiri node to process the attributes of.
     #
-    def self.process_attributes(node, xmlns:)
+    def process_attributes(node, xmlns:)
       attributes = []
 
       if !xmlns && !node.attribute('xmlns') && (xmlns = namespace(node))
@@ -379,7 +386,7 @@ module HTX
         )
       end
 
-      node.attribute_nodes.each.with_object(attributes) do |attribute, attributes|
+      node.attribute_nodes.each do |attribute|
         next if attribute.node_name == DYNAMIC_KEY_ATTR
 
         attributes.push(
@@ -387,6 +394,8 @@ module HTX
           attribute_value(attribute.value)
         )
       end
+
+      attributes
     end
 
     ##
@@ -394,7 +403,7 @@ module HTX
     #
     # * +node+ - Nokogiri node to get the namespace of.
     #
-    def self.namespace(node)
+    def namespace(node)
       node.namespace&.href || DEFAULT_XMLNS[node.name]
     end
 
@@ -404,8 +413,8 @@ module HTX
     #
     # * +text+ - Tag name as returned by Nokogiri.
     #
-    def self.tag_name(text)
-      html5_parser? ? text : (TAG_MAP[text] || text)
+    def tag_name(text)
+      self.class.html5_parser? ? text : (TAG_MAP[text] || text)
     end
 
     ##
@@ -414,8 +423,8 @@ module HTX
     #
     # * +text+ - Attribute name as returned by Nokogiri.
     #
-    def self.attribute_name(text)
-      "'#{html5_parser? ? text : (ATTR_MAP[text] || text)}'"
+    def attribute_name(text)
+      "'#{self.class.html5_parser? ? text : (ATTR_MAP[text] || text)}'"
     end
 
     ##
@@ -423,7 +432,7 @@ module HTX
     #
     # * +text+ - Attribute value as returned by Nokogiri.
     #
-    def self.attribute_value(text)
+    def attribute_value(text)
       text ? TextParser.new(text, statement_allowed: false).parse : nil
     end
 
@@ -467,7 +476,7 @@ module HTX
       linearGradient
       radialGradient
       textPath
-    ].map { |tag| [tag.downcase, tag] }.to_h.freeze
+    ].to_h { |tag| [tag.downcase, tag] }.freeze
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute
     ATTR_MAP = %w[
@@ -530,6 +539,6 @@ module HTX
       xChannelSelector
       yChannelSelector
       zoomAndPan
-    ].map { |attr| [attr.downcase, attr] }.to_h.freeze
+    ].to_h { |attr| [attr.downcase, attr] }.freeze
   end
 end

@@ -3,12 +3,16 @@
 require('strscan')
 
 module HTX
+  ##
+  # Parses text node or attribute value to determine if it's text to render or a JavaScript control
+  # statement.
+  #
   class TextParser
     LEADING = /\A((?:[^\S\n]*\n)+)?((?:[^\S\n])+)?(?=\S)/.freeze
     TRAILING = /([\S\s]*?)(\s*?)(\n[^\S\n]*)?\z/.freeze
 
     NOT_ESCAPED = /(?<=^|[^\\])(?:\\\\)*/.freeze
-    OF_INTEREST = /#{NOT_ESCAPED}(?<chars>[`'"]|\${)|(?<chars>{|}|\/\/|\/\*|\*\/|\n[^\S\n]*(?=\S))/.freeze
+    OF_INTEREST = %r{#{NOT_ESCAPED}(?<chars>[`'"]|\$\{)|(?<chars>\{|\}|//|/\*|\*/|\n[^\S\n]*(?=\S))}.freeze
     TERMINATOR = {
       '\'' => '\'',
       '"' => '"',
@@ -18,7 +22,7 @@ module HTX
 
     TEXT = /\S|\A[^\S\n]+\z/.freeze
     IDENTIFIER = /[_$a-zA-Z][_$a-zA-Z0-9]*/.freeze
-    ASSIGNMENT = /\s*(\+|&|\||\^|\/|\*\*|<<|&&|\?\?|\|\||\*|%|-|>>>)?=/.freeze
+    ASSIGNMENT = %r{\s*(\+|&|\||\^|/|\*\*|<<|&&|\?\?|\|\||\*|%|-|>>>)?=}.freeze
     STATEMENT = /[{}]|(^|\s)#{IDENTIFIER}(\.#{IDENTIFIER})*(#{ASSIGNMENT}|\+\+|--|\[|\()/.freeze
 
     attr_reader(:type, :content, :leading, :trailing, :whitespace_buff)
@@ -99,12 +103,11 @@ module HTX
           if chars[0] == "\n"
             indent = chars.delete_prefix("\n")
 
-            if !@last_indent
-              @last_indent = indent
-            else
-              @min_indent = @last_indent if !@min_indent || @last_indent.size < @min_indent.size
-              @last_indent = indent
+            if @last_indent && (!@min_indent || @last_indent.size < @min_indent.size)
+              @min_indent = @last_indent
             end
+
+            @last_indent = indent
           end
 
           if can_ignore && (ignore_end = TERMINATOR[chars])
