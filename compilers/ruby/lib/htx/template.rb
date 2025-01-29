@@ -480,6 +480,7 @@ module HTX
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute
     ATTR_MAP = %w[
+      allowReorder
       attributeName
       attributeType
       autoReverse
@@ -487,8 +488,12 @@ module HTX
       baseProfile
       calcMode
       clipPathUnits
+      contentScriptType
+      contentStyleType
       diffuseConstant
       edgeMode
+      externalResourcesRequired
+      filterRes
       filterUnits
       glyphRef
       gradientTransform
@@ -536,6 +541,7 @@ module HTX
       targetY
       textLength
       viewBox
+      viewTarget
       xChannelSelector
       yChannelSelector
       zoomAndPan
