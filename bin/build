@@ -19,7 +19,7 @@ VERSION_FILES = Dir[File.join("{#{BASE_DIR},#{RUBY_DIR}}", 'VERSION')].freeze
 VERSION_FILE_RUBY = File.join(RUBY_DIR, 'lib', LIB_NAME, 'version.rb').freeze
 CHANGELOG_FILE = File.join(BASE_DIR, 'CHANGELOG.md').freeze
 CHANGELOG_FILE_FOR_GEM = File.join(RUBY_DIR, File.basename(CHANGELOG_FILE)).freeze
-TEST_COMMAND = File.join(RUBY_DIR, 'bin', 'test').freeze
+TEST_COMMAND = File.join(BASE_DIR, 'bin', 'test').freeze
 
 SRC_DIR = File.join(BASE_DIR, 'src').freeze
 DIST_DIR = File.join(BASE_DIR, 'dist').freeze

@@ -1,0 +1,24 @@
+{
+  "name": "htx",
+  "version": "1.0.1",
+  "author": "Nate Pickens",
+  "description": "A full-featured HTML template system that is simple, lightweight, and highly performant.",
+  "keywords": ["DOM", "HTX", "HTML", "JSX", "manipulate", "render", "template"],
+  "license": "MIT",
+
+  "repository": "npickens/htx",
+  "homepage": "https://github.com/npickens/htx",
+  "bugs": "https://github.com/npickens/htx/issues",
+
+  "type": "module",
+  "main": "src/htx.js",
+
+  "scripts": {
+    "test": "testy test"
+  },
+
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "@pmoo/testy": "^7.1.0"
+  }
+}

@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require('English')
+
+NODE_PACKAGE_MANAGERS = %w[yarn npm pnpm bun].freeze
+NODE_PACKAGE_MANAGER = NODE_PACKAGE_MANAGERS.find { |pm| `which #{pm}`; $CHILD_STATUS == 0 }.freeze
+
+BASE_DIR = File.dirname(__dir__).freeze
+COMPILER_TESTS = Dir.glob(File.join(BASE_DIR, 'compilers', '*', 'bin', 'test')).freeze
+
+if NODE_PACKAGE_MANAGER.nil?
+  abort("\e[31m\u2718\e[39m No Node package manager found (checked #{NODE_PACKAGE_MANAGERS.join(', ')})")
+end
+
+(["#{NODE_PACKAGE_MANAGER} test"] + COMPILER_TESTS).each do |test_command|
+  system(test_command)
+
+  unless $CHILD_STATUS.exitstatus == 0
+    $stderr.puts("\n\e[31m\u2718\e[39m Tests failed")
+    exit($CHILD_STATUS.exitstatus)
+  end
+end
