@@ -3,10 +3,9 @@
 require('strscan')
 
 module HTX
-  ##
-  # Parses text node or attribute value to determine if it's text to render or a JavaScript control
-  # statement.
-  #
+  # Handles parsing a template text node or attribute value to determine if it's a JavaScript control
+  # statement or template string, and if the latter to promote single/top-level interpolations to raw
+  # objects (`${this.myObject}` becomes this.myObject).
   class TextParser
     LEADING = /\A((?:[^\S\n]*\n)+)?((?:[^\S\n])+)?(?=\S)/.freeze
     TRAILING = /([\S\s]*?)(\s*?)(\n[^\S\n]*)?\z/.freeze
@@ -27,42 +26,41 @@ module HTX
 
     attr_reader(:type, :content, :leading, :trailing, :whitespace_buff)
 
-    ##
-    # Creates a new instance.
+    # Public: Create a new instance.
     #
-    # * +text+ - Text to parse.
-    # * +statement_allowed+ - True if statements are allowed; false if text is always a template or raw (
-    #   single interpolation).
-    #
+    # text               - String text to parse.
+    # statement_allowed: - Boolean indicating if the text is allowed to be a statement (false for attribute
+    #                      values and <htx-content> text content).
     def initialize(text, statement_allowed:)
       @text = text
       @statement_allowed = statement_allowed
     end
 
-    ##
-    # Returns true if parsed text is a statement.
+    # Public: Check if the parsed text was determined to be a JavaScript statement.
     #
+    # Returns the boolean result.
     def statement?
       @type == :statement
     end
 
-    ##
-    # Returns true if parsed text is a single interpolation.
+    # Public: Check if the parsed text was determined to be a single top-level interpolation.
     #
+    # Returns the boolean result.
     def raw?
       @type == :raw
     end
 
-    ##
-    # Returns true if parsed text is a template.
+    # Public: Check if the parsed text was determined to be a JavaScript template string.
     #
+    # Returns the boolean result.
     def template?
       @type == :template
     end
 
-    ##
-    # Parses text.
+    # Parse the text.
     #
+    # Returns the parsed text String with any needed adjustments made (single top-level interpolations
+    # promoted to non-strings).
     def parse
       @type = nil
       @content = +''
@@ -151,10 +149,10 @@ module HTX
 
     private
 
-    ##
-    # Determines type (statement, raw, or template) and adjust formatting accordingly. Called at the end of
-    # parsing.
+    # Internal: Determine the text type (statement, raw, or template) after parsing and adjust the string
+    # accordingly.
     #
+    # Returns nothing.
     def finalize
       if @is_statement
         @type = :statement
@@ -192,19 +190,19 @@ module HTX
       end
     end
 
-    ##
-    # Pushes a state onto the stack during parsing.
+    # Internal: Push a state onto the stack during parsing.
     #
-    # * +state+ - State to push onto the stack.
+    # state - Symbol state name.
     #
+    # Returns nothing.
     def push_state(state)
       flush if @stack.empty?
       @stack << state
     end
 
-    ##
-    # Pops a state from the stack during parsing.
+    # Internal: Pop a state from the stack during parsing.
     #
+    # Returns nothing.
     def pop_state
       state = @stack.pop
 
@@ -216,11 +214,11 @@ module HTX
       end
     end
 
-    ##
-    # Flushes buffer during parsing and performs statement detection if appropriate.
+    # Internal: Flush the buffer during parsing and perform statement detection if appropriate.
     #
-    # * +state+ - Last state that was parsed.
+    # state - Last Symbol state name that was parsed.
     #
+    # Returns nothing.
     def flush(state = nil)
       return if @buffer.empty?
 

@@ -3,9 +3,8 @@
 require('nokogiri')
 
 module HTX
-  ##
-  # Represents an HTX template. A template can be compiled to its JavaScript form with the #compile method.
-  #
+  # Represents an HTX template and provides functionality for compiling a raw / human-written template into
+  # its compiled / pure JavaScript form.
   class Template
     ELEMENT   = 1 << 0
     CHILDLESS = 1 << 1
@@ -33,38 +32,54 @@ module HTX
     WHITESPACE_BEGIN = /\A\s/.freeze
     NON_WHITESPACE = /\S/.freeze
 
-    ##
-    # Returns true if Nokogiri's HTML5 parser is available.
-    #
+    # Public: Return a boolean indicating if Nokogiri's HTML5 parser is available. (In some environments,
+    # such as JRuby, the HTML5 parser is not available, in which case the older / less strict HTML4 parser
+    # must be used instead.)
     def self.html5_parser?
-      defined?(Nokogiri::HTML5)
+      !!defined?(Nokogiri::HTML5)
     end
 
-    ##
-    # Returns Nokogiri's HTML5 parser if available or Nokogiri's default HTML (4) parser otherwise.
+    # Public: Get Nokogiri's HTML5 parser if available or Nokogiri's default HTML4 parser otherwise.
     #
+    # Returns the best available Nokogiri parser.
     def self.nokogiri_parser
       html5_parser? ? Nokogiri::HTML5 : Nokogiri::HTML
     end
 
-    ##
-    # Creates a new instance.
+    # Public: Create a new instance.
     #
-    # * +name+ - Template name. Conventionally the path of the template file.
-    # * +content+ - Template content.
+    # name    - String template name. Conventionally the path of the template file.
+    # content - String template body/content.
     #
+    # Examples
+    #
+    #   HTX::Template.new('/components/crew.htx', '<div>...</div>')
+    #   HTX::Template.new(File.basename(path), File.read(path))
     def initialize(name, content)
       @name = name
       @content = content
     end
 
-    ##
-    # Compiles the HTX template.
+    # Public: Compile the template to its JavaScript form.
     #
-    # * +as_module+ - Boolean indicating whether or not to compile as a JavaScript module.
-    # * +import_path+ - Path to HTX JavaScript library for module import statement.
-    # * +assign_to+ - JavaScript object to assign the template function to if module not being used.
+    # as_module:   - Boolean indicating whether or not to compile as a JavaScript module (defaults to
+    #                HTX.as_module).
+    # import_path: - String path to the HTX JavaScript library for the module import statement (defaults to
+    #                HTX.import_path; ignored when as_module: false).
+    # assign_to:   - String JavaScript object to assign the template function to (defaults to
+    #                HTX.assign_to; ignored when as_module: true).
     #
+    # Examples
+    #
+    #   template = HTX::Template.new('/components/crew.htx', '<div>...</div>')
+    #   template.compile(as_module: true, import_path: '/vendor/htx.js')
+    #   # => "import * as HTX from '/vendor/htx.js' [...]"
+    #
+    #   template = HTX::Template.new('/components/crew.htx', '<div>...</div>')
+    #   template.compile(as_module: false, assign_to: 'myTemplates')
+    #   # => "myTemplates['/components/crew.htx'] = [...]"
+    #
+    # Returns the compiled template String (JavaScript code).
     def compile(as_module: nil, import_path: nil, assign_to: nil)
       @as_module = as_module.nil? ? HTX.as_module : as_module
       @import_path = import_path || HTX.import_path
@@ -83,9 +98,9 @@ module HTX
       @compiled
     end
 
-    ##
-    # Returns high-level object info string.
+    # Public: Get a high-level object info String about this Template instance.
     #
+    # Returns the String.
     def inspect
       "#<#{self.class} " \
         "@as_module=#{@as_module.inspect}, " \
@@ -100,11 +115,14 @@ module HTX
 
     private
 
-    ##
-    # Removes comment nodes and merges any adjoining text nodes that result from such removals.
+    # Internal: Remove comment nodes and merge any adjoining text nodes that result from such removals.
     #
-    # * +node+ - Nokogiri node to preprocess.
+    # node - Nokogiri::XML::Node node to preprocess.
     #
+    # Returns nothing.
+    # Raises HTX::MalformedTemplateError if a text node is found at the root level.
+    # Raises HTX::MalformedTemplateError if no root node is found.
+    # Raises HTX::MalformedTemplateError if multiple root nodes are found.
     def preprocess(node)
       if node.text?
         if node.parent&.fragment? && node.blank?
@@ -140,11 +158,13 @@ module HTX
       end
     end
 
-    ##
-    # Processes a DOM node's descendents.
+    # Internal: Process a DOM node's descendants.
     #
-    # * +node+ - Nokogiri node to process.
+    # node   - Nokogiri::XML::Node node to process.
+    # xmlns: - Boolean indicating if the node has an XML namespace.
     #
+    # Returns nothing.
+    # Raises HTX::MalformedTemplateError if the node is not a fragment, element, or text node.
     def process(node, xmlns: false)
       if node.fragment?
         process_fragment_node(node)
@@ -157,11 +177,11 @@ module HTX
       end
     end
 
-    ##
-    # Processes a document fragment node.
+    # Internal: Process a document fragment node.
     #
-    # * +node+ - Nokogiri node to process.
+    # node - Nokogiri::XML::DocumentFragment node to process.
     #
+    # Returns nothing.
     def process_fragment_node(node)
       append("#{
         if @as_module
@@ -196,12 +216,14 @@ module HTX
       flush
     end
 
-    ##
-    # Processes an element node.
+    # Internal: Process an element node.
     #
-    # * +node+ - Nokogiri node to process.
-    # * +xmlns+ - True if node is the descendant of a node with an xmlns attribute.
+    # node   - Nokogiri::XML::Element node to process.
+    # xmlns: - Boolean indicating if the node has an inherited XML namespace from an ancestor.
     #
+    # Returns nothing.
+    # Raises HTX::MalformedTemplateError if the element is an <htx-content> tag and has attribute(s) other
+    #   than htx-key or a non-text child/children.
     def process_element_node(node, xmlns: false)
       is_template = node.name == 'template'
       children = node.children
@@ -243,12 +265,13 @@ module HTX
       end
     end
 
-    ##
-    # Processes a text node.
+    # Internal: Process a text node.
     #
-    # * +node+ - Nokogiri node to process.
-    # * +dynamic_key+ - Dynamic key of the parent if it's an <htx-content> node.
+    # node        - Nokogiri::XML::Text node to process.
+    # dynamic_key: - String dynamic key of the node's parent if the parent is an <htx-content> node (since
+    #                an <htx-content> node is replaced with its child text node during compilation).
     #
+    # Returns nothing.
     def process_text_node(node, dynamic_key: nil)
       content = node.content
 
@@ -282,12 +305,12 @@ module HTX
       end
     end
 
-    ##
-    # Appends a string to the compiled template function string with appropriate punctuation and/or
+    # Internal: Append a string to the compiled template function string with appropriate punctuation and/or
     # whitespace inserted.
     #
-    # * +text+ - String to append to the compiled template string.
+    # text - String to append to the compiled template string.
     #
+    # Returns nothing.
     def append(text)
       return if text.nil? || text.empty?
 
@@ -320,11 +343,12 @@ module HTX
       @statement_buff << text
     end
 
-    ##
-    # Appends an +$renderer.node+ call to the compiled template function string.
+    # Internal: Append a $renderer.node call to the compiled template function string.
     #
-    # * +args+ - Arguments to use for the +$renderer.node+ call (any +nil+ ones are removed).
+    # args - Array of String text or tag name, String attribute names and values, and an Integer bitwise
+    #        flag value to use for the $renderer.node call (any nil items are ignored).
     #
+    # Returns nothing.
     def append_htx_node(*args)
       return if args.first.nil?
 
@@ -335,47 +359,47 @@ module HTX
       append("$renderer.node(#{args.join(', ')})")
     end
 
-    ##
-    # Flushes statement buffer.
+    # Internal: Flush the statement buffer.
     #
+    # Returns nothing.
     def flush
       @compiled << @statement_buff
       @statement_buff.clear
     end
 
-    ##
-    # Indents each line of a string (except the first).
+    # Internal: Indent each line of a string except the first.
     #
-    # * +text+ - String of lines to indent.
+    # text - String of lines to indent.
     #
+    # Returns the String indented text.
     def indent(text)
       text.gsub!(INDENT_REGEX, "\\0#{@indent}")
       text
     end
 
-    ##
-    # Returns true if the node is whitespace containing at least one newline.
+    # Internal: Determine if the node is all whitespace while also containing at least one newline.
     #
-    # * +node+ - Nokogiri node to check.
+    # node - Nokogiri::XML::Node node to check.
     #
+    # Returns the boolean result.
     def formatting_node?(node)
       node.blank? && node.content.include?("\n")
     end
 
-    ##
-    # Returns true if the node is an <htx-content> node (or one of its now-deprecated names).
+    # Internal: Determine if the node is an <htx-content> tag.
     #
-    # * +node+ - Nokogiri node to check.
+    # node - Nokogiri::XML::Node node to check.
     #
+    # Returns the boolean result.
     def htx_content_node?(node)
       node&.name == CONTENT_TAG
     end
 
-    ##
-    # Processes a node's attributes returning a flat array of attribute names and values.
+    # Internal: Process a node's attributes.
     #
-    # * +node+ - Nokogiri node to process the attributes of.
+    # node - Nokogiri::XML::Node node to process the attributes of.
     #
+    # Returns an Array of String attribute names and values (['k1', 'v1', 'k2', 'v2', ...]).
     def process_attributes(node, xmlns:)
       attributes = []
 
@@ -398,40 +422,41 @@ module HTX
       attributes
     end
 
-    ##
-    # Returns namespace URL of a Nokogiri node.
+    # Internal: Get the namespace URL of a node.
     #
-    # * +node+ - Nokogiri node to get the namespace of.
+    # node - Nokogiri::XML::Node node to get the namespace of.
     #
+    # Returns the namespace URL String.
     def namespace(node)
       node.namespace&.href || DEFAULT_XMLNS[node.name]
     end
 
-    ##
-    # Returns the given text if the HTML5 parser is in use, or looks up the value in the tag map to get the
-    # correctly-cased version, falling back to the supplied text if no mapping exists.
+    # Internal: Restore appropriate casing of a tag name if needed. When Nokogiri's HTML4 parser is being
+    # used, all tag names get downcased, which breaks case-sensitive SVG elements and must be corrected.
     #
-    # * +text+ - Tag name as returned by Nokogiri.
+    # text - String tag name as returned by Nokogiri.
     #
+    # Returns the properly-cased String tag name.
     def tag_name(text)
       self.class.html5_parser? ? text : (TAG_MAP[text] || text)
     end
 
-    ##
-    # Returns the given text if the HTML5 parser is in use, or looks up the value in the attribute map to
-    # get the correctly-cased version, falling back to the supplied text if no mapping exists.
+    # Internal: Restore appropriate casing of an attribute name if needed. When Nokogiri's HTML4 parser is
+    # being used, all attribute names get downcased, which breaks case-sensitive SVG attributes and must be
+    # corrected.
     #
-    # * +text+ - Attribute name as returned by Nokogiri.
+    # text - String attribute name as returned by Nokogiri.
     #
+    # Returns the properly-cased String attribute name.
     def attribute_name(text)
       "'#{self.class.html5_parser? ? text : (ATTR_MAP[text] || text)}'"
     end
 
-    ##
-    # Returns the processed value of an attribute.
+    # Internal: Parse an attribute value to properly handle JavaScript interpolations.
     #
-    # * +text+ - Attribute value as returned by Nokogiri.
+    # text - String attribute value as returned by Nokogiri.
     #
+    # Returns the String processed value.
     def attribute_value(text)
       text ? TextParser.new(text, statement_allowed: false).parse : nil
     end
