@@ -13,7 +13,7 @@ CODE_FILE_ABSOLUTE = File.join(BASE_DIR, CODE_FILE).freeze
 MOZILLA_BASE_URL = 'https://developer.mozilla.org/en-US/docs/Web/SVG/'
 
 code = File.read(CODE_FILE_ABSOLUTE)
-error = nil
+error = false
 
 [
   ['TAG_MAP', 'Element', [
@@ -67,7 +67,5 @@ error = nil
   added.each { |a| puts("  \e[32m+\e[39m #{a}") }
 end
 
-unless error
-  File.write(CODE_FILE_ABSOLUTE, code)
-  exit(1)
-end
+File.write(CODE_FILE_ABSOLUTE, code)
+exit(1) if error
