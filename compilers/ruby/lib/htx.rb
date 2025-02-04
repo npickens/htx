@@ -15,7 +15,6 @@ module HTX
     attr_accessor(:as_module, :import_path, :assign_to)
   end
 
-  ##
   # Public: Create a new Template instance and compile it.
   #
   # name    - String template name. Conventionally the path of the template file.
