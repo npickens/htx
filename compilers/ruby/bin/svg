@@ -38,7 +38,7 @@ error = false
   end
 
   if !match || old_items.empty?
-    warn("\e[31m\u2718\e[39m #{const} not updated in #{CODE_FILE}: could not find definition")
+    $stderr.puts("\e[31m\u2718\e[39m #{const} not updated in #{CODE_FILE}: could not find definition")
     error = true
     next
   end
