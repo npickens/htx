@@ -32,9 +32,10 @@ module HTX
     WHITESPACE_BEGIN = /\A\s/.freeze
     NON_WHITESPACE = /\S/.freeze
 
-    # Public: Return a boolean indicating if Nokogiri's HTML5 parser is available. (In some environments,
-    # such as JRuby, the HTML5 parser is not available, in which case the older / less strict HTML4 parser
-    # must be used instead.)
+    # Public: Check if Nokogiri's HTML5 parser is available. (In some environments, such as JRuby, the HTML5
+    # parser is not available, in which case the older / less strict HTML4 parser must be used instead.)
+    #
+    # Returns the boolean result.
     def self.html5_parser?
       !!defined?(Nokogiri::HTML5)
     end
@@ -98,7 +99,7 @@ module HTX
       @compiled
     end
 
-    # Public: Get a high-level object info String about this Template instance.
+    # Public: Get a high-level object info string about this Template instance.
     #
     # Returns the String.
     def inspect
