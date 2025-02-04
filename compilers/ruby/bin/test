@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-Dir.chdir(File.dirname(__dir__))
+ENV['BUNDLE_GEMFILE'] = File.join(File.dirname(__dir__), 'Gemfile')
 
 require('bundler/setup')
 
-BASE_DIR = Dir.pwd.freeze
+BASE_DIR = File.dirname(__dir__).freeze
 LIB_NAME = File.basename(Dir[File.join(BASE_DIR, '*.gemspec')].first, '.gemspec').freeze
 TEST_GLOB = File.join(BASE_DIR, "{.,#{"#{LIB_NAME}-*"}}", 'test', '**', '*_test.rb').freeze
 
