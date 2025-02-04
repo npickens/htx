@@ -2,7 +2,9 @@
 
 ## Upcoming (Unreleased)
 
-* Nothing yet
+* Add package.json and basic tests
+* Restore deprecated attributes in Ruby compiler mixed-case SVG map
+* Include deprecated case-sensitive SVG tags/attributes in Ruby compiler
 
 ## 1.0.1 (2025 January 21)
 
