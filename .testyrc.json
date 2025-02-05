@@ -1,4 +1,5 @@
 {
   "directory": "./test",
-  "filter": ".*-test.js$"
+  "filter": ".*-test.js$",
+  "randomOrder": true
 }
