@@ -6,10 +6,6 @@ Dir.chdir(File.dirname(__dir__))
 require('fileutils')
 require('json')
 
-if ARGV.size > 0 && ![:major, :minor, :patch].include?(bump = ARGV[0].to_s.strip.to_sym)
-  abort('Usage: bin/build [major | minor | patch]')
-end
-
 BASE_DIR = Dir.pwd.freeze
 RUBY_DIR = File.join(BASE_DIR, 'compilers', 'ruby').freeze
 LIB_NAME = File.basename(Dir[File.join(RUBY_DIR, '*.gemspec')].first, '.gemspec').freeze
@@ -34,11 +30,12 @@ COPYRIGHT = File.readlines(File.join(BASE_DIR, 'LICENSE')).first.strip
 OLD_VERSION = File.read(VERSION_FILES.first).strip.freeze
 major, minor, patch = OLD_VERSION.split('.').map(&:to_i)
 NEW_VERSION =
-  case bump || :patch
-  when :major then "#{major + 1}.0.0"
-  when :minor then "#{major}.#{minor + 1}.0"
-  when :patch then "#{major}.#{minor}.#{patch + 1}"
-  end
+  case ARGV.first&.to_sym
+  when :major      then "#{major + 1}.0.0"
+  when :minor      then "#{major}.#{minor + 1}.0"
+  when :patch, nil then "#{major}.#{minor}.#{patch + 1}"
+  else abort('Usage: bin/build [major | minor | patch]')
+  end.freeze
 
 DEPENDENCIES = [
   ['Homebrew',  'which brew || which npm',        '/bin/bash -c "$(curl -fsSL ' \
