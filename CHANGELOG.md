@@ -2,6 +2,7 @@
 
 ## Upcoming (Unreleased)
 
+* Stop requiring `<template>` tag to wrap JavaScript in some places
 * Add package.json and basic tests
 * Restore deprecated attributes in Ruby compiler mixed-case SVG map
 * Include deprecated case-sensitive SVG tags/attributes in Ruby compiler

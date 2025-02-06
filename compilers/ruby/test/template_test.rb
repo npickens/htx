@@ -190,15 +190,31 @@ class TemplateTest < Minitest::Test
     template = HTX::Template.new(name, '<table><template>if (true) { <tr></tr> }</template></table>')
     render_body = "$renderer.node('table', 9); if (true) {  $renderer.node('tr', 19) } $renderer.close()"
 
-    assert_assign_render_body(render_body, name, template)
-    assert_module_render_body(render_body, name, template)
+    Warning.stub(:warn, nil) do
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
+    end
+  end
+
+  test('warns when <template> tag is used') do
+    name = '/template-tag.htx'
+    template = HTX::Template.new(name, '<table><template>if (true) { <tr></tr> }</template></table>')
+    render_body = "$renderer.node('table', 9); if (true) {  $renderer.node('tr', 19) } $renderer.close()"
+    warning = nil
+
+    Warning.stub(:warn, ->(msg, *) { warning = msg }) do
+      assert_assign_render_body(render_body, name, template)
+      assert_module_render_body(render_body, name, template)
+    end
+
+    assert(warning)
   end
 
   ##########################################################################################################
   ## Attributes - Case                                                                                    ##
   ##########################################################################################################
 
-  test('maintains case of mixed-case SVG tag and attribute names when non-HTML5 parser is used') do
+  test('maintains case of mixed-case SVG tag and attribute names') do
     name = '/case-sensitive-svg.htx'
 
     content = <<~HTML
@@ -215,10 +231,8 @@ class TemplateTest < Minitest::Test
 
     template = HTX::Template.new(name, content)
 
-    HTX::Template.stub(:html5_parser?, false) do
-      assert_assign_render_body(render_body, name, template)
-      assert_module_render_body(render_body, name, template)
-    end
+    assert_assign_render_body(render_body, name, template)
+    assert_module_render_body(render_body, name, template)
   end
 
   ##########################################################################################################

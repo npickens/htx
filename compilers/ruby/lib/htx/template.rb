@@ -32,21 +32,6 @@ module HTX
     WHITESPACE_BEGIN = /\A\s/.freeze
     NON_WHITESPACE = /\S/.freeze
 
-    # Public: Check if Nokogiri's HTML5 parser is available. (In some environments, such as JRuby, the HTML5
-    # parser is not available, in which case the older / less strict HTML4 parser must be used instead.)
-    #
-    # Returns the boolean result.
-    def self.html5_parser?
-      !!defined?(Nokogiri::HTML5)
-    end
-
-    # Public: Get Nokogiri's HTML5 parser if available or Nokogiri's default HTML4 parser otherwise.
-    #
-    # Returns the best available Nokogiri parser.
-    def self.nokogiri_parser
-      html5_parser? ? Nokogiri::HTML5 : Nokogiri::HTML
-    end
-
     # Public: Create a new instance.
     #
     # name    - String template name. Conventionally the path of the template file.
@@ -92,7 +77,7 @@ module HTX
       @statement_buff = +''
       @compiled = +''
 
-      doc = self.class.nokogiri_parser.fragment(@content)
+      doc = Nokogiri::HTML4.fragment(@content)
       preprocess(doc)
       process(doc)
 
@@ -232,6 +217,21 @@ module HTX
       dynamic_key = attribute_value(node.attr(DYNAMIC_KEY_ATTR))
       attributes = process_attributes(node, xmlns: xmlns)
       xmlns ||= !namespace(node).nil?
+
+      # Previously it was recommended that the <template> tag be used to wrap JavaScript statement text in
+      # places where text was not allowed under the HTML5 spec (e.g. as a direct child of <tbody>). Since
+      # this was cumbersome and ugly, Nokogiri's HTML5 is no longer used, so warn that this should no longer
+      # be done.
+      if is_template && !node.parent.fragment?
+        line = node.line
+        line = node.parent.line if line < 1
+        line = nil if line == -1
+
+        warn("#{@name}#{":#{line}" if line}: A <template> tag should no longer be used to wrap " \
+          'JavaScript code in places where text is not allowed under the HTML5 spec. If this is a normal ' \
+          'use of the <template> tag, disregard this warning; otherwise remove the tag, as it will be ' \
+          'treated like any other tag in an upcoming version of HTX.')
+      end
 
       if htx_content_node?(node)
         if !attributes.empty?
@@ -432,25 +432,22 @@ module HTX
       node.namespace&.href || DEFAULT_XMLNS[node.name]
     end
 
-    # Internal: Restore appropriate casing of a tag name if needed. When Nokogiri's HTML4 parser is being
-    # used, all tag names get downcased, which breaks case-sensitive SVG elements and must be corrected.
+    # Internal: Restore appropriate casing of a tag name if needed.
     #
     # text - String tag name as returned by Nokogiri.
     #
     # Returns the properly-cased String tag name.
     def tag_name(text)
-      self.class.html5_parser? ? text : (TAG_MAP[text] || text)
+      TAG_MAP[text] || text
     end
 
-    # Internal: Restore appropriate casing of an attribute name if needed. When Nokogiri's HTML4 parser is
-    # being used, all attribute names get downcased, which breaks case-sensitive SVG attributes and must be
-    # corrected.
+    # Internal: Restore appropriate casing of an attribute name if needed.
     #
     # text - String attribute name as returned by Nokogiri.
     #
     # Returns the properly-cased String attribute name.
     def attribute_name(text)
-      "'#{self.class.html5_parser? ? text : (ATTR_MAP[text] || text)}'"
+      "'#{ATTR_MAP[text] || text}'"
     end
 
     # Internal: Parse an attribute value to properly handle JavaScript interpolations.
@@ -462,10 +459,8 @@ module HTX
       text ? TextParser.new(text, statement_allowed: false).parse : nil
     end
 
-    # The Nokogiri::HTML5 parser is used whenever possible, which correctly handles mix-cased SVG tag and
-    # attribute names. But when falling back to the Nokogiri::HTML parser (e.g. in JRuby environments where
-    # Nokogiri::HTML5 is not available), all tag and attribute names get downcased. These maps are used to
-    # restore the correct case.
+    # The Nokogiri::HTML4 parser downcases all tag and attribute names, which breaks mix-cased SVG tag and
+    # attribute names. These maps are used to restore the correct case.
 
     # Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Element
     TAG_MAP = %w[

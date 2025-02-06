@@ -269,38 +269,6 @@ only attribute allowed is `htx-key`.)
 </textarea>
 ```
 
-#### Valid HTML5
-
-To ensure HTML5 validity of an uncompiled template and thus correct parsing/compilation, the `<template>`
-tag can be used as a kind of dummy wrapper in contexts where text is not allowed (e.g. inside a `<table>`
-tag). This tag is not included in a template's compiled form, with its children instead becoming direct
-children of their grandparent. (Since the `<template>` tag exists for dynamic DOM rendering via JavaScript
-and that is already what is being accomplished with an HTX template in the first place, compiling the tag
-like any other wouldn't make much sense.)
-
-
-```html
-<!-- Template -->
-<table>
-  <tbody>
-    <template>
-      for (let member of this.members) {
-        <tr><td>${member.name}</td></tr>
-      }
-    </template>
-  </tbody>
-</table>
-
-<!-- Result -->
-<table>
-  <tbody>
-    <tr><td>Mal</td></tr>
-    <tr><td>Zoe</td></tr>
-    <tr><td>Jayne</td></tr>
-  </tbody>
-</table>
-```
-
 #### Keys
 
 For optimal performance when rendering content via a loop, a unique key can be provided for each item by way
