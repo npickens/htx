@@ -249,7 +249,7 @@ module HTX
       else
         unless is_template
           append_htx_node(
-            "'#{tag_name(node.name)}'",
+            tag_name(node.name),
             *attributes,
             dynamic_key,
             ELEMENT | (childless ? CHILDLESS : 0) | (xmlns ? XMLNS : 0),
@@ -432,20 +432,20 @@ module HTX
       node.namespace&.href || DEFAULT_XMLNS[node.name]
     end
 
-    # Internal: Restore appropriate casing of a tag name if needed.
+    # Internal: Restore appropriate casing of a tag name (if needed) and wrap in quotes.
     #
     # text - String tag name as returned by Nokogiri.
     #
-    # Returns the properly-cased String tag name.
+    # Returns the quoted, properly-cased String tag name.
     def tag_name(text)
-      TAG_MAP[text] || text
+      "'#{TAG_MAP[text] || text}'"
     end
 
-    # Internal: Restore appropriate casing of an attribute name if needed.
+    # Internal: Restore appropriate casing of an attribute name (if needed) and wrap in quotes.
     #
     # text - String attribute name as returned by Nokogiri.
     #
-    # Returns the properly-cased String attribute name.
+    # Returns the quoted, properly-cased String attribute name.
     def attribute_name(text)
       "'#{ATTR_MAP[text] || text}'"
     end
