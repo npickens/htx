@@ -268,7 +268,7 @@ module HTX
 
     # Internal: Process a text node.
     #
-    # node        - Nokogiri::XML::Text node to process.
+    # node         - Nokogiri::XML::Text node to process.
     # dynamic_key: - String dynamic key of the node's parent if the parent is an <htx-content> node (since
     #                an <htx-content> node is replaced with its child text node during compilation).
     #
