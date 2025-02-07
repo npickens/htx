@@ -102,19 +102,6 @@ The result:
 </div>
 ```
 
-## HTX Versus JSX
-
-HTX is like the reverse of JSX: instead of embedding HTML syntax within JavaScript, JavaScript is embedded
-within HTML. Syntax aside, HTX has two key advantages over JSX:
-
-1. **HTX DOM updates are both faster and more memory efficient than those of JSX.** HTX leverages the DOM
-   directly to track changes and perform updates. There is no virtual DOM.  See the [JavaScript
-   Library](#javascript-library) section for how it works and the [Performance](#performance) section for
-   benchmark results.
-2. **HTX permits any JavaScript code to be used as control statements.** Whereas JSX requires ternary
-   operators for conditionals and `map` calls for loops, HTX permits plain old `if` statements and `for`
-   loops (though the former may be used if so desired).
-
 ## Template Syntax
 
 HTX templates are HTML documents with JavaScript syntax inserted for control flow and to render dynamic
@@ -272,8 +259,8 @@ only attribute allowed is `htx-key`.)
 #### Keys
 
 For optimal performance when rendering content via a loop, a unique key can be provided for each item by way
-of an `htx-key` attribute (those familiar with JSX will recognize this functionality). This attribute is not
-included as an actual attribute on the resulting DOM node, but is leveraged by the [JavaScript
+of an `htx-key` attribute (those familiar with React will recognize this functionality). This attribute is
+not included as an actual attribute on the resulting DOM node, but is leveraged by the [JavaScript
 Library](#javascript-library) to optimize the performance of DOM updates.
 
 ```html
@@ -525,29 +512,3 @@ class Crew extends HTX.Component {
   }
 }
 ```
-
-## Performance
-
-**NOTE**: Performance has not been reassessed since a very early version of the HTX library. Stats may
-differ now. The following was at one time true and is _possibly_ still true:
-
-> HTX is both faster and more memory efficient than JSX. Instead of building a virtual DOM and diff-ing it
-> against the real DOM, HTX walks the actual DOM and updates it on the fly. Doing so is very performant and
-> has almost no memory overhead.
->
-> Performance has been measured with an adaptation of the DBMonster web app. The average of 10 runs each
-> running on a MacBook Pro, 3.1GHz i7, 16GB memory are as follows:
->
->  | Metric                | JSX   | HTX   | HTX Improvement |
->  |-----------------------|-------|-------|-----------------|
->  | numAnimationFrames    | 179.4 | 225.5 | 26% faster      |
->  | numFramesSentToScreen | 179.4 | 225.5 | 26% faster      |
->  | droppedFrameCount     | 349.3 | 279.4 | 20% fewer       |
->  | meanFrameTime_raf     | 48.85 | 37.16 | 24% shorter     |
->  | framesPerSec_raf      | 20.47 | 26.92 | 32% more        |
->  | firstPaint            | 954.3 | 202.7 | 79% faster      |
->  | loadTime              | 846.6 | 88.9  | 89% faster      |
->  | domReadyTime          | 147.4 | 46.7  | 68% faster      |
->  | readyStart            | 3.2   | 1.7   | 47% faster      |
->  | requestTime           | 2.3   | 1.8   | 22% faster      |
->  | initDomTreeTime       | 696.9 | 40.4  | 94% faster      |
