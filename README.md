@@ -1,6 +1,6 @@
 # HTX
 
-HTX is a full-featured HTML template system that is simple, lightweight, and highly performant.
+HTX is an HTML template system that is simple, lightweight, and fast.
 
 1. **Template Syntax** — A simple combination of HTML and JavaScript. No sugar added.
 2. **Compilation** — Templates are precompiled to JavaScript. A DOM both generated and manipulated by

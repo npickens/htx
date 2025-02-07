@@ -2,7 +2,7 @@
   "name": "htx",
   "version": "1.0.1",
   "author": "Nate Pickens",
-  "description": "A full-featured HTML template system that is simple, lightweight, and highly performant.",
+  "description": "An HTML template system that is simple, lightweight, and fast.",
   "keywords": ["DOM", "HTX", "HTML", "JSX", "manipulate", "render", "template"],
   "license": "MIT",
 
