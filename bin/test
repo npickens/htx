@@ -3,17 +3,17 @@
 
 require('English')
 
-NODE_PACKAGE_MANAGERS = %w[yarn npm pnpm bun].freeze
-NODE_PACKAGE_MANAGER = NODE_PACKAGE_MANAGERS.find { |pm| `which #{pm}`; $CHILD_STATUS == 0 }.freeze
-
 BASE_DIR = File.dirname(__dir__).freeze
-COMPILER_TESTS = Dir.glob(File.join(BASE_DIR, 'compilers', '*', 'bin', 'test')).freeze
+TEST_COMMAND = "cd #{BASE_DIR} && node --run test".freeze
+COMPILER_TEST_COMMANDS = Dir.glob(File.join(BASE_DIR, 'compilers', '*', 'bin', 'test')).freeze
 
-if NODE_PACKAGE_MANAGER.nil?
-  abort("\e[31m\u2718\e[39m No Node package manager found (checked #{NODE_PACKAGE_MANAGERS.join(', ')})")
+if `which node 2>&1` && $CHILD_STATUS.exitstatus != 0
+  abort("\e[31m\u2718\e[39m Node not installed or not in path (`which node` failed)")
+elsif (node_version = `node -v`)[/^v?(\d+)\./, 1].to_i < 22
+  abort("\e[31m\u2718\e[39m Node v22.0.0 or later is required but #{node_version.strip} is installed")
 end
 
-(["#{NODE_PACKAGE_MANAGER} test"] + COMPILER_TESTS).each do |test_command|
+[TEST_COMMAND, *COMPILER_TEST_COMMANDS].each do |test_command|
   system(test_command)
 
   unless $CHILD_STATUS.exitstatus == 0
