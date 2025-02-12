@@ -1,14 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-ENV['BUNDLE_GEMFILE'] = File.join(File.dirname(__dir__), 'Gemfile')
-
-require('bundler/setup')
-
-BASE_DIR = File.dirname(__dir__).freeze
-LIB_NAME = File.basename(Dir[File.join(BASE_DIR, '*.gemspec')].first, '.gemspec').freeze
-TEST_GLOB = File.join(BASE_DIR, "{.,#{"#{LIB_NAME}-*"}}", 'test', '**', '*_test.rb').freeze
-
-Dir[TEST_GLOB].each do |file|
+Dir[File.join(File.dirname(__dir__), 'test', '*_test.rb')].each do |file|
   require(file)
 end

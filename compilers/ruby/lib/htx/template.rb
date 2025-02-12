@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require('nokogiri')
+require_relative('malformed_template_error')
+require_relative('text_parser')
 
 module HTX
   # Represents an HTX template and provides functionality for compiling a raw / human-written template into

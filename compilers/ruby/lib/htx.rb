@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
-require('htx/malformed_template_error')
-require('htx/template')
-require('htx/text_parser')
-require('htx/version')
+require_relative('htx/template')
+require_relative('htx/version')
 
 # A Ruby compiler for HTX templates.
 module HTX

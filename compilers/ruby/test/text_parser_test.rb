@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require('htx')
-require('minitest/autorun')
 require_relative('test_helper')
 
 class TextParserTest < Minitest::Test
