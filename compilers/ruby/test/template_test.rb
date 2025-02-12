@@ -313,7 +313,7 @@ class TemplateTest < Minitest::Test
     assert_module_render_body(render_body, name, template)
   end
 
-  test('indents with leading tab(s) of first indented lineasdf') do
+  test('indents with leading tab(s) of first indented line') do
     name = '/tab-indent.htx'
 
     content = <<~HTML
