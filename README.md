@@ -19,7 +19,7 @@ Syntax](#template-syntax) section for the full spec):
   <h1>${this.title}</h1>
 
   <ul class='members'>
-    for (let member of this.member) {
+    for (let member of this.members) {
       <li class='member ${member.role}'>
         ${member.name}
       </li>
