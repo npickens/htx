@@ -7,11 +7,11 @@ module HTX
   # statement or template string, and if the latter to promote single/top-level interpolations to raw
   # objects (`${this.myObject}` becomes this.myObject).
   class TextParser
-    LEADING = /\A((?:[^\S\n]*\n)+)?((?:[^\S\n])+)?(?=\S)/.freeze
-    TRAILING = /([\S\s]*?)(\s*?)(\n[^\S\n]*)?\z/.freeze
+    LEADING = /\A((?:[^\S\n]*\n)+)?((?:[^\S\n])+)?(?=\S)/
+    TRAILING = /([\S\s]*?)(\s*?)(\n[^\S\n]*)?\z/
 
-    NOT_ESCAPED = /(?<=^|[^\\])(?:\\\\)*/.freeze
-    OF_INTEREST = %r{#{NOT_ESCAPED}(?<chars>[`'"]|\$\{)|(?<chars>\{|\}|//|/\*|\*/|\n[^\S\n]*(?=\S))}.freeze
+    NOT_ESCAPED = /(?<=^|[^\\])(?:\\\\)*/
+    OF_INTEREST = %r{#{NOT_ESCAPED}(?<chars>[`'"]|\$\{)|(?<chars>\{|\}|//|/\*|\*/|\n[^\S\n]*(?=\S))}
     TERMINATOR = {
       '\'' => '\'',
       '"' => '"',
@@ -19,10 +19,10 @@ module HTX
       '/*' => '*/',
     }.freeze
 
-    TEXT = /\S|\A[^\S\n]+\z/.freeze
-    IDENTIFIER = /[_$a-zA-Z][_$a-zA-Z0-9]*/.freeze
-    ASSIGNMENT = %r{\s*(\+|&|\||\^|/|\*\*|<<|&&|\?\?|\|\||\*|%|-|>>>)?=}.freeze
-    STATEMENT = /[{}]|(^|\s)#{IDENTIFIER}(\.#{IDENTIFIER})*(#{ASSIGNMENT}|\+\+|--|\[|\()/.freeze
+    TEXT = /\S|\A[^\S\n]+\z/
+    IDENTIFIER = /[_$a-zA-Z][_$a-zA-Z0-9]*/
+    ASSIGNMENT = %r{\s*(\+|&|\||\^|/|\*\*|<<|&&|\?\?|\|\||\*|%|-|>>>)?=}
+    STATEMENT = /[{}]|(^|\s)#{IDENTIFIER}(\.#{IDENTIFIER})*(#{ASSIGNMENT}|\+\+|--|\[|\()/
 
     attr_reader(:type, :content, :leading, :trailing, :whitespace_buff)
 

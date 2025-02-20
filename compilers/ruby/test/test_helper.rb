@@ -20,7 +20,7 @@ module Minitest
 end
 
 module TestHelper
-  INSPECT_SPLIT = /@(?=\w+=)/.freeze
+  INSPECT_SPLIT = /@(?=\w+=)/
   INSPECT_JOIN = "\n@"
 
   ##########################################################################################################

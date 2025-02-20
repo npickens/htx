@@ -21,18 +21,18 @@ module HTX
       'svg' => 'http://www.w3.org/2000/svg',
     }.freeze
 
-    INDENT_GUESS = /^( +|\t+)(?=\S)/.freeze
-    INDENT_REGEX = /\n(?=[^\n])/.freeze
+    INDENT_GUESS = /^( +|\t+)(?=\S)/
+    INDENT_REGEX = /\n(?=[^\n])/
 
-    AUTO_SEMICOLON_BEGIN = /\A\s*[\n;}]/.freeze
-    AUTO_SEMICOLON_END = /(\A|[\n;{}][^\S\n]*)\z/.freeze
+    AUTO_SEMICOLON_BEGIN = /\A\s*[\n;}]/
+    AUTO_SEMICOLON_END = /(\A|[\n;{}][^\S\n]*)\z/
 
-    NEWLINE_BEGIN = /\A\s*\n/.freeze
-    NEWLINE_END = /\n[^\S\n]*\z/.freeze
-    NEWLINE_END_OPTIONAL = /\n?[^\S\n]*\z/.freeze
+    NEWLINE_BEGIN = /\A\s*\n/
+    NEWLINE_END = /\n[^\S\n]*\z/
+    NEWLINE_END_OPTIONAL = /\n?[^\S\n]*\z/
 
-    WHITESPACE_BEGIN = /\A\s/.freeze
-    NON_WHITESPACE = /\S/.freeze
+    WHITESPACE_BEGIN = /\A\s/
+    NON_WHITESPACE = /\S/
 
     # Public: Create a new instance.
     #
