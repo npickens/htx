@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-ENV['BUNDLE_GEMFILE'] = File.join(File.dirname(__dir__), 'Gemfile')
+unless Dir.pwd == (base_dir = File.dirname(__dir__))
+  ENV['BUNDLE_GEMFILE'] = File.join(base_dir, 'Gemfile')
+end
 
 require('bundler/setup')
 require('htx')
