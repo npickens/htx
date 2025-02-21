@@ -28,4 +28,13 @@ suite('HTX.Renderer', () => {
 
     assert.that(node.textContent).isEqualTo('Hello, Zoe!')
   })
+
+  test('renders undefined and null as empty text', () => {
+    let Template = Helpers.defineTemplate(function($r) {
+      $r.node('div', 9); $r.node(this.content, 16); $r.close()
+    })
+
+    assert.that(new Template({content: undefined}).render().textContent).isEqualTo('')
+    assert.that(new Template({content: null}).render().textContent).isEqualTo('')
+  })
 })

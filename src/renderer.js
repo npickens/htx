@@ -81,7 +81,7 @@ export class Renderer {
       }
     } else {
       if (object && object.render instanceof Function) object = object.render()
-      if (object === null || object === undefined) object = ''
+      if (object == null) object = ''
 
       if (object instanceof Node) {
         node = object
