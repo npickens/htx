@@ -111,17 +111,17 @@ export class Renderer {
         v = v.filter(Boolean).join(' ') || null
       }
 
-      let empty = v === null || v === undefined
-
       // setAttribute doesn't always behave as expected with input values / selection state, so set the
       // property directly.
-      if (
-        (node.tagName == 'INPUT' && (k == 'value' || k == 'checked')) ||
+      if (node.tagName == 'INPUT' && k == 'value') {
+        node[k] = v == null ? null : v
+      } else if (
+        (node.tagName == 'INPUT' && k == 'checked') ||
         (node.tagName == 'OPTION' && k == 'selected')
       ) {
-        node[k] = empty ? null : v
+        node[k] = !!v
       } else {
-        empty || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+        v == null || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
       }
     }
 
