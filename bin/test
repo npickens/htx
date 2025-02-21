@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require('English')
+require('optparse')
 
 BASE_DIR = File.dirname(__dir__).freeze
 TEST_COMMAND = "cd #{BASE_DIR} && node --run test".freeze
@@ -13,7 +14,22 @@ elsif (node_version = `node -v`)[/^v?(\d+)\./, 1].to_i < 22
   abort("\e[31m\u2718\e[39m Node v22.0.0 or later is required but #{node_version.strip} is installed")
 end
 
-[TEST_COMMAND, *COMPILER_TEST_COMMANDS].each do |test_command|
+options = {}
+parser = OptionParser.new do |parser|
+  parser.banner = "Usage:\n    #{$0} [options]"
+  parser.separator("\nOptions:")
+  parser.on('-c', "--compilers", 'Also run tests for compilers')
+end
+
+begin
+  parser.parse!(into: options)
+rescue OptionParser::ParseError => e
+  puts(parser)
+  puts("\n\e[31m\u2718\e[39m #{e.message.capitalize}")
+  exit(1)
+end
+
+[TEST_COMMAND, *(options[:compilers] ? COMPILER_TEST_COMMANDS : [])].each do |test_command|
   system(test_command)
 
   unless $CHILD_STATUS.exitstatus == 0

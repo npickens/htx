@@ -78,7 +78,7 @@ end
 def test
   task(
     preamble: 'Running tests...',
-    command: TEST_COMMAND,
+    command: "#{TEST_COMMAND} --compilers",
     success: 'Tests passed',
   )
 end
