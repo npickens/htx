@@ -9,18 +9,6 @@ require('htx')
 require('minitest/autorun')
 require('minitest/reporters')
 
-module Minitest
-  def self.plugin_index_init(options)
-    return unless options[:filter].to_i.to_s == options[:filter]
-
-    options[:filter] = "/^test_#{options[:filter]}: /"
-  end
-
-  register_plugin('index')
-
-  Reporters.use!(Reporters::ProgressReporter.new)
-end
-
 module TestHelper
   INSPECT_SPLIT = /@(?=\w+=)/
   INSPECT_JOIN = "\n@"
@@ -58,4 +46,16 @@ module TestHelper
       actual.inspect.split(INSPECT_SPLIT).join(INSPECT_JOIN)
     )
   end
+end
+
+module Minitest
+  def self.plugin_index_init(options)
+    return unless options[:filter].to_i.to_s == options[:filter]
+
+    options[:filter] = "/^test_#{options[:filter]}: /"
+  end
+
+  register_plugin('index')
+
+  Reporters.use!(Reporters::ProgressReporter.new)
 end
