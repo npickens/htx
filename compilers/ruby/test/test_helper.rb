@@ -49,6 +49,8 @@ module TestHelper
 end
 
 module Minitest
+  ENV['MT_NO_PLUGINS'] = '1'
+
   def self.plugin_index_init(options)
     return unless options[:filter].to_i.to_s == options[:filter]
 
