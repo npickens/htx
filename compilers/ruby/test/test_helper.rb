@@ -52,9 +52,7 @@ module Minitest
   ENV['MT_NO_PLUGINS'] = '1'
 
   def self.plugin_index_init(options)
-    return unless options[:filter].to_i.to_s == options[:filter]
-
-    options[:filter] = "/^test_#{options[:filter]}: /"
+    options[:filter]&.sub!(/^\d+$/, '/^test_\0: /')
   end
 
   register_plugin('index')
