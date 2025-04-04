@@ -346,7 +346,7 @@ function render($renderer) {
     $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
 
     $renderer.node('ul', 'class', `members`, 33)
-      for (let member of this.member) {
+      for (let member of this.members) {
         $renderer.node('li', 'class', `member ${member.role}`, 41)
           $renderer.node(member.name, 48)
         $renderer.close()
@@ -376,7 +376,7 @@ myTemplates['/components/crew.htx'] = ((HTX) => {
       $renderer.node('h1', 17); $renderer.node(this.title, 24); $renderer.close()
 
       $renderer.node('ul', 'class', `members`, 33)
-        for (let member of this.member) {
+        for (let member of this.members) {
           $renderer.node('li', 'class', `member ${member.role}`, 41)
             $renderer.node(member.name, 48)
           $renderer.close()
