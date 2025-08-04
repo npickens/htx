@@ -19,6 +19,6 @@
 
   "devDependencies": {
     "jsdom": "^26.1.0",
-    "@pmoo/testy": "^7.1.0"
+    "@pmoo/testy": "^8.0.0"
   }
 }
