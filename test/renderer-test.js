@@ -46,7 +46,7 @@ suite('HTX.Renderer', () => {
   /* Attributes                                                                                           */
   /********************************************************************************************************/
 
-  test('sets <input> Node object `value` property instead of calling setAttribute', () => {
+  test('sets <input> Node object `value` property in addition to calling setAttribute', () => {
     let Template = Helpers.defineTemplate(function($r) {
       $r.node('input', 'value', this.value, 11)
     })
@@ -55,14 +55,14 @@ suite('HTX.Renderer', () => {
     let template = new Template(context)
     let node = template.render()
 
-    node.setAttribute = () => fail.with('Expected setAttribute to not be called')
     context.value = 'World'
     template.render()
 
+    assert.that(node.getAttribute('value')).isEqualTo('World')
     assert.that(node.value).isEqualTo('World')
   })
 
-  test('sets <input> Node object `checked` property instead of calling setAttribute', () => {
+  test('sets <input> Node object `checked` property in addition to calling setAttribute', () => {
     let Template = Helpers.defineTemplate(function($r) {
       $r.node('input', 'checked', this.checked, 11)
     })
@@ -71,14 +71,14 @@ suite('HTX.Renderer', () => {
     let template = new Template(context)
     let node = template.render()
 
-    node.setAttribute = () => fail.with('Expected setAttribute to not be called')
     context.checked = true
     template.render()
 
+    assert.that(node.getAttribute('checked')).isEqualTo('')
     assert.that(node.checked).isTrue()
   })
 
-  test('sets <option> Node object `selected` property instead of calling setAttribute', () => {
+  test('sets <option> Node object `selected` property in addition to calling setAttribute', () => {
     let Template = Helpers.defineTemplate(function($r) {
       $r.node('select', 9)
         $r.node('option', 17); $r.node(`Option 1`, 24); $r.close()
@@ -90,10 +90,10 @@ suite('HTX.Renderer', () => {
     let template = new Template(context)
     let node = template.render().lastChild
 
-    node.setAttribute = () => fail.with('Expected setAttribute to not be called')
     context.selected = true
     template.render()
 
+    assert.that(node.getAttribute('selected')).isEqualTo('')
     assert.that(node.selected).isTrue()
   })
 })

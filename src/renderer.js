@@ -111,18 +111,17 @@ export class Renderer {
         v = v.filter(Boolean).join(' ') || null
       }
 
-      // setAttribute doesn't always behave as expected with input values / selection state, so set the
-      // property directly.
+      // Coerce value and set object property directly for special input attributes.
       if (node.tagName == 'INPUT' && k == 'value') {
-        node[k] = v == null ? null : v
+        node[k] = v = (v == null ? null : v)
       } else if (
         (node.tagName == 'INPUT' && k == 'checked') ||
         (node.tagName == 'OPTION' && k == 'selected')
       ) {
-        node[k] = !!v
-      } else {
-        v == null || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
+        node[k] = v = !!v
       }
+
+      v == null || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)
     }
 
     if (!parentNode) {

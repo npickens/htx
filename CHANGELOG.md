@@ -2,6 +2,7 @@
 
 ## Upcoming (Unreleased)
 
+* Set a node's attribute even when directly setting its object property
 * Ensure boolean values for 'checked' and 'selected' form input properties
 * Stop requiring `<template>` tag to wrap JavaScript in some places
 * Add package.json and basic tests
