@@ -141,7 +141,7 @@ def build_javascript
       content.gsub!(/^(?!\n)/, '  ')
 
       content.prepend(javascript_comment(full_lib_name) + "(HTX => {\n")
-      content.concat("})(globalThis.HTX ||= {});\n\n")
+      content.concat("})(globalThis.HTX ||= {});\n")
 
       all << content
 
