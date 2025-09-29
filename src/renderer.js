@@ -118,7 +118,7 @@ export class Renderer {
         (node.tagName == 'INPUT' && k == 'checked') ||
         (node.tagName == 'OPTION' && k == 'selected')
       ) {
-        node[k] = v = !!v
+        node[k] = v = (v == null || v === false ? false : true)
       }
 
       v == null || v === false ? node.removeAttribute(k) : node.setAttribute(k, v === true ? '' : v)

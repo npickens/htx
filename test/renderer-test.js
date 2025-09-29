@@ -96,4 +96,71 @@ suite('HTX.Renderer', () => {
     assert.that(node.getAttribute('selected')).isEqualTo('')
     assert.that(node.selected).isTrue()
   })
+
+  test('treats undefined, null, and false values as false and all other values as true for <input> ' +
+       '`checked` and <option> `selected` attributes', () => {
+    let Template = Helpers.defineTemplate(function($r) {
+      $r.node('div', 9)
+        $r.node('input', 'checked', this.checked, 19)
+        $r.node('select', 25)
+          $r.node('option', 33); $r.node(`Option 1`, 40); $r.close()
+          $r.node('option', 'selected', this.selected, 49); $r.node(`Option 2`, 56)
+      $r.close(3)
+    })
+
+    let context = {}
+    let template = new Template(context)
+    let node = template.render()
+    let input = node.querySelector('input')
+    let option = node.querySelector('option:last-child')
+
+    let setValue = function(value) {
+      context.checked = value
+      context.selected = value
+
+      template.render()
+    }
+
+    setValue(undefined)
+    assert.isNull(input.getAttribute('checked'))
+    assert.isNull(option.getAttribute('selected'))
+    assert.isFalse(input.checked)
+    assert.isFalse(option.selected)
+
+    setValue(null)
+    assert.isNull(input.getAttribute('checked'))
+    assert.isNull(option.getAttribute('selected'))
+    assert.isFalse(input.checked)
+    assert.isFalse(option.selected)
+
+    setValue(false)
+    assert.isNull(input.getAttribute('checked'))
+    assert.isNull(option.getAttribute('selected'))
+    assert.isFalse(input.checked)
+    assert.isFalse(option.selected)
+
+    setValue(NaN)
+    assert.that(input.getAttribute('checked')).isEqualTo('')
+    assert.that(option.getAttribute('selected')).isEqualTo('')
+    assert.isTrue(input.checked)
+    assert.isTrue(option.selected)
+
+    setValue(0)
+    assert.that(input.getAttribute('checked')).isEqualTo('')
+    assert.that(option.getAttribute('selected')).isEqualTo('')
+    assert.isTrue(input.checked)
+    assert.isTrue(option.selected)
+
+    setValue('')
+    assert.that(input.getAttribute('checked')).isEqualTo('')
+    assert.that(option.getAttribute('selected')).isEqualTo('')
+    assert.isTrue(input.checked)
+    assert.isTrue(option.selected)
+
+    setValue('false')
+    assert.that(input.getAttribute('checked')).isEqualTo('')
+    assert.that(option.getAttribute('selected')).isEqualTo('')
+    assert.isTrue(input.checked)
+    assert.isTrue(option.selected)
+  })
 })

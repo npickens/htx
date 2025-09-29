@@ -2,6 +2,7 @@
 
 ## Upcoming (Unreleased)
 
+* **Only convert undefined and null to false for special input attributes**
 * Set a node's attribute even when directly setting its object property
 * Ensure boolean values for 'checked' and 'selected' form input properties
 * Stop requiring `<template>` tag to wrap JavaScript in some places
